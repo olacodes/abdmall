@@ -143,6 +143,23 @@ export function SiteFooter() {
           </div>
         </div>
       </div>
+
+      {/* build credit */}
+      <div className="border-t border-white/10 bg-black/30">
+        <div className="mx-auto max-w-7xl px-5 py-4 text-center sm:px-8">
+          <p className="text-xs text-white/60">
+            Designed &amp; built by{" "}
+            <a
+              href="https://osmani.com.ng"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-gold-bright transition-colors hover:text-gold-hi"
+            >
+              Osmani Technologies Limited
+            </a>
+          </p>
+        </div>
+      </div>
     </footer>
   );
 }

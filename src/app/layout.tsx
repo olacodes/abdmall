@@ -33,6 +33,11 @@ export const metadata: Metadata = {
   description:
     "Shop fashion, electronics, home, beauty and daily essentials. Pay your way, delivered to your door.",
   metadataBase: new URL("https://abdmall.com"),
+  authors: [
+    { name: "Osmani Technologies Limited", url: "https://osmani.com.ng" },
+  ],
+  creator: "Osmani Technologies Limited",
+  publisher: "Osmani Technologies Limited",
   openGraph: {
     title: "abdmall — Modern commerce, simplified",
     description:
