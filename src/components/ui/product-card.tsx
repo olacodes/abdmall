@@ -10,7 +10,13 @@ import {
   FREE_DELIVERY_THRESHOLD,
 } from "@/lib/format";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: Product;
+  priority?: boolean;
+}) {
   const off = product.oldPrice
     ? discountPercent(product.oldPrice, product.price)
     : 0;
@@ -25,6 +31,7 @@ export function ProductCard({ product }: { product: Product }) {
       >
         <ProductArt
           product={product}
+          priority={priority}
           className="h-full w-full transition-transform duration-300 group-hover:scale-[1.04]"
         />
         {off > 0 && (

@@ -10,10 +10,12 @@ export function ProductArt({
   product,
   className = "",
   sizes = "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw",
+  priority = false,
 }: {
   product: Product;
   className?: string;
   sizes?: string;
+  priority?: boolean;
 }) {
   const monogram = product.name
     .split(" ")
@@ -28,6 +30,7 @@ export function ProductArt({
           src={product.image}
           alt={product.name}
           fill
+          priority={priority}
           sizes={sizes}
           className="object-cover"
         />
