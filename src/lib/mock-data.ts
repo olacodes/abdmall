@@ -65,6 +65,13 @@ export const categories: Category[] = [
     image: img("cold-pressed-coconut-oil"),
   },
   {
+    slug: "jewelry",
+    name: "Jewelry",
+    tagline: "Rings, chains & gemstones",
+    hue: ["#2a2416", "#b8860b"],
+    image: img("jewelry-gold-chain"),
+  },
+  {
     slug: "groceries",
     name: "Groceries",
     tagline: "Foodstuff & daily essentials",
@@ -365,6 +372,43 @@ export const products: Product[] = [
     sold: 1300, badge: "deal", swatch: ["#3a1c10", "#c0502b"],
     image: img("devon-kings-oil-25l"),
     blurb: "Thick, red, unadulterated palm oil for soups and stews.",
+  },
+
+  // ---------- Jewelry ----------
+  {
+    id: "p44", slug: "gold-tone-statement-ring", name: "Gold-Tone Statement Ring",
+    category: "jewelry", price: 24000, oldPrice: 32000, rating: 4.7, reviews: 186,
+    sold: 640, badge: "deal", swatch: ["#3a2c10", "#c8a83c"],
+    image: img("jewelry-ring-set"),
+    blurb: "A bold, gold-tone ring with a centre stone — statement-ready.",
+  },
+  {
+    id: "p45", slug: "twisted-gold-cuff-bracelet", name: "Twisted Gold Cuff Bracelet",
+    category: "jewelry", price: 38000, rating: 4.6, reviews: 142, sold: 380,
+    badge: "new", swatch: ["#2c2410", "#b8902b"],
+    image: img("jewelry-cuff-bracelet"),
+    blurb: "Hand-finished twisted cuff with a warm gold sheen.",
+  },
+  {
+    id: "p46", slug: "18k-gold-plated-chain", name: "18k Gold-Plated Chain Necklace",
+    category: "jewelry", price: 45000, rating: 4.8, reviews: 512, sold: 1100,
+    badge: "bestseller", swatch: ["#332810", "#caa63c"],
+    image: img("jewelry-gold-chain"),
+    blurb: "Tarnish-resistant 18k gold-plated chain with a classic pendant.",
+  },
+  {
+    id: "p47", slug: "teardrop-gemstone-pendant", name: "Teardrop Gemstone Pendant",
+    category: "jewelry", price: 52000, oldPrice: 68000, rating: 4.7, reviews: 231,
+    sold: 470, badge: "deal", swatch: ["#3a1420", "#b4485c"],
+    image: img("jewelry-gemstone-pendant"),
+    blurb: "A cut gemstone teardrop set in gold — everyday elegance.",
+  },
+  {
+    id: "p48", slug: "rough-uncut-gemstone", name: "Raw Rough Gemstone (Uncut)",
+    category: "jewelry", price: 30000, rating: 4.5, reviews: 88, sold: 160,
+    badge: "new", swatch: ["#2a1a2c", "#9a5a7a"],
+    image: img("jewelry-rough-gem"),
+    blurb: "A natural, uncut gemstone specimen — for collectors and jewellers.",
   },
 ];
 

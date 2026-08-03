@@ -99,7 +99,7 @@ export default function Home() {
         <h2 className="mb-3 font-display text-xl font-semibold text-ink">
           Shop by category
         </h2>
-        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-5 lg:overflow-visible">
+        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-6 lg:overflow-visible">
           {categories.map((cat) => (
             <div key={cat.slug} className="w-36 shrink-0 lg:w-auto">
               <CategoryTile category={cat} className="h-40" />
@@ -159,6 +159,11 @@ export default function Home() {
         title="Beauty & Personal Care"
         href="/categories/beauty"
         products={productsByCategory("beauty")}
+      />
+      <ProductRail
+        title="Jewelry & Gemstones"
+        href="/categories/jewelry"
+        products={productsByCategory("jewelry")}
       />
       <ProductRail
         title="Groceries & Foodstuff"
