@@ -28,6 +28,13 @@ const slides = [
     image: "/products/i-pass-my-neighbour-generator.jpg",
   },
   {
+    badge: "New: Jewelry",
+    title: "Gold, gems & everyday shine",
+    sub: "Rings, chains, bracelets and gemstones — now on abdmall.",
+    href: "/categories/jewelry",
+    image: "/products/jewelry-gold-chain.jpg",
+  },
+  {
     badge: "Market Run",
     title: "Foodstuff, delivered",
     sub: "Rice, oil, garri and daily essentials — straight to your door.",
