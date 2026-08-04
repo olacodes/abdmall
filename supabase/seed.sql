@@ -1,0 +1,75 @@
+-- ============================================================================
+-- abdmall — seed data  (GENERATED — do not edit by hand)
+-- Source: src/lib/mock-data.ts  ·  Regenerate: npx tsx scripts/generate-seed.ts
+-- Runs after migrations on `supabase db reset` / local dev.
+-- Image paths are the current local /products/* files; they become Supabase
+-- Storage URLs once imagery is moved to a bucket.
+-- ============================================================================
+
+insert into public.categories (slug, name, tagline, hue, image_url, sort_order) values
+  ('fashion','Fashion','Ankara, native & ready-to-wear','{"#3a2a4d","#8a5a2b"}','/products/adire-kaftan-shirt.jpg',1),
+  ('electronics','Electronics','Phones, power & gadgets','{"#0e2f3a","#2b6a7a"}','/products/tecno-spark-smartphone.jpg',2),
+  ('home','Home & Kitchen','Everything for the house','{"#2c1f14","#7a5a2b"}','/products/4-burner-gas-cooker.jpg',3),
+  ('beauty','Beauty','Shea, black soap & glow','{"#3d1f2b","#a85a6a"}','/products/cold-pressed-coconut-oil.jpg',4),
+  ('jewelry','Jewelry','Rings, chains & gemstones','{"#2a2416","#b8860b"}','/products/jewelry-gold-chain.jpg',5),
+  ('groceries','Groceries','Foodstuff & daily essentials','{"#1f2e14","#5a7a2b"}','/products/golden-penny-rice-50kg.jpg',6);
+
+insert into public.products
+  (slug, name, category_id, price, old_price, stock, badge, rating, review_count, sold_count, image_url, swatch, blurb)
+select v.slug, v.name, c.id, v.price, v.old_price, v.stock,
+       v.badge::public.product_badge, v.rating, v.review_count, v.sold_count,
+       v.image_url, v.swatch::text[], v.blurb
+from (values
+  ('ankara-print-maxi-gown','Ankara Print Maxi Gown','fashion',28000,38000,50,'deal',4.8,214,1240,'/products/ankara-print-maxi-gown.jpg','{"#6b2b4a","#caa15a"}','Vibrant wax-print maxi with a flattering flared cut, tailored locally.'),
+  ('agbada-senator-3-piece','Agbada 3-Piece Senator Set','fashion',65000,null,50,'bestseller',4.9,342,890,'/products/agbada-senator-3-piece.jpg','{"#20303a","#6a7a5a"}','Embroidered agbada, top and trouser — for owambe and every big day.'),
+  ('adire-kaftan-shirt','Adire Kaftan Shirt','fashion',22000,null,50,'new',4.6,128,410,'/products/adire-kaftan-shirt.jpg','{"#14343a","#5a8a9a"}','Hand-dyed Abeokuta adire in a relaxed, breathable kaftan cut.'),
+  ('kano-leather-palm-sandals','Kano Leather Palm Sandals','fashion',18500,null,50,null,4.7,96,320,'/products/kano-leather-palm-sandals.jpg','{"#3a2817","#9a6f3a"}','Genuine hand-stitched leather sandals from Kano artisans.'),
+  ('sego-gele-head-tie','Sego Gele Head-Tie','fashion',9500,13000,4,'deal',4.5,173,760,'/products/sego-gele-head-tie.jpg','{"#4a2130","#b46a7c"}','Stiff, crisp sego perfect for a show-stopping gele.'),
+  ('ankara-two-piece-set','Ankara Two-Piece Set','fashion',32000,41000,50,'deal',4.7,158,540,'/products/ankara-print-maxi-gown.jpg','{"#5a2b4a","#c8a15a"}','Coordinated top and skirt in bold wax print — an instant outfit.'),
+  ('mens-senator-kaftan','Men''s Senator Kaftan','fashion',38000,null,50,null,4.6,121,300,'/products/agbada-senator-3-piece.jpg','{"#22303a","#7a8a6a"}','Sharp, minimal senator wear for the office and evenings out.'),
+  ('aso-ebi-lace-fabric','Aso-Ebi Lace Fabric (5 Yards)','fashion',27000,null,50,'new',4.5,89,210,'/products/sego-gele-head-tie.jpg','{"#4a2536","#b46a80"}','Premium French lace for your next aso-ebi — rich texture, clean finish.'),
+  ('mens-leather-loafers','Men''s Leather Loafers','fashion',26000,34000,50,'deal',4.6,143,380,'/products/kano-leather-palm-sandals.jpg','{"#3a2817","#a07a4a"}','Polished slip-on loafers in genuine leather — comfort meets class.'),
+  ('tecno-spark-smartphone','Tecno Spark 20 Smartphone','electronics',135000,null,50,'bestseller',4.7,1032,3400,'/products/tecno-spark-smartphone.jpg','{"#12333d","#3f7d8c"}','Big 6.6" display, 5000mAh battery and a 50MP camera.'),
+  ('i-pass-my-neighbour-generator','"I Pass My Neighbour" 1.5kVA Generator','electronics',95000,115000,6,'deal',4.6,611,1900,'/products/i-pass-my-neighbour-generator.jpg','{"#2b2b12","#8a7a3a"}','Fuel-efficient petrol generator to keep the lights and fan on.'),
+  ('20000mah-power-bank','20,000mAh Fast-Charge Power Bank','electronics',16500,null,50,null,4.5,458,2600,'/products/20000mah-power-bank.jpg','{"#1a1a22","#5a6a8a"}','Charge your phone up to five times — NEPA-proof power on the go.'),
+  ('rechargeable-standing-fan','18" Rechargeable Standing Fan','electronics',42000,null,50,'new',4.6,287,980,'/products/rechargeable-standing-fan.jpg','{"#14303a","#4a8a9a"}','Runs for hours on a full charge — cool air even when there''s no light.'),
+  ('solar-rechargeable-lantern','Solar Rechargeable Lantern','electronics',8900,null,50,null,4.4,210,1500,'/products/solar-rechargeable-lantern.jpg','{"#2c2410","#a8902b"}','USB and solar charging with a bright, long-lasting LED panel.'),
+  ('infinix-hot-40-smartphone','Infinix Hot 40 Smartphone','electronics',118000,139000,50,'deal',4.6,742,2100,'/products/tecno-spark-smartphone.jpg','{"#14303a","#4a7d8c"}','90Hz display, big battery and a sharp camera for less.'),
+  ('3-5kva-key-start-generator','3.5kVA Key-Start Generator','electronics',235000,null,50,null,4.7,188,420,'/products/i-pass-my-neighbour-generator.jpg','{"#2b2b14","#8a7a3a"}','Power the whole flat — key start, low noise, copper coil.'),
+  ('rechargeable-table-fan','Rechargeable Table Fan','electronics',19500,26000,50,'deal',4.4,214,870,'/products/rechargeable-standing-fan.jpg','{"#16303a","#4a8a9a"}','Compact desk fan with USB charging — cool the room or the shop.'),
+  ('10000mah-slim-power-bank','10,000mAh Slim Power Bank','electronics',11000,null,50,null,4.3,302,1800,'/products/20000mah-power-bank.jpg','{"#1a1a24","#5a6a8a"}','Pocket-sized backup power with fast USB-C charging.'),
+  ('3-in-1-blender-grinder','3-in-1 Blender & Dry Mill','home',34000,null,50,'bestseller',4.7,523,2400,'/products/3-in-1-blender-grinder.jpg','{"#2c1c12","#7a512b"}','Blend pepper, grind egusi and crayfish — a Nigerian kitchen must-have.'),
+  ('nonstick-pot-set-5pcs','Non-Stick Pot Set (5 Pieces)','home',48000,59000,50,'deal',4.6,189,640,'/products/nonstick-pot-set-5pcs.jpg','{"#1f1f24","#6a6a4a"}','Durable non-stick pots for jollof, stew and soups without wahala.'),
+  ('4-burner-gas-cooker','4-Burner Standing Gas Cooker','home',120000,null,5,null,4.8,142,360,'/products/4-burner-gas-cooker.jpg','{"#22160e","#8a5a2b"}','Four burners plus an oven — Sunday cooking, sorted.'),
+  ('insulated-food-flask','5L Insulated Food Flask','home',15000,null,50,null,4.5,267,1100,'/products/insulated-food-flask.jpg','{"#2b1f2c","#8a6a7a"}','Keeps rice and soup hot for hours — ideal for parties and travel.'),
+  ('blender-pro-1000w','Blender Pro 1000W with Mill','home',41000,52000,50,'deal',4.6,198,520,'/products/3-in-1-blender-grinder.jpg','{"#2c1e12","#7a552b"}','Powerful 1000W motor for smoothies, soups and dry milling.'),
+  ('stainless-pot-set-7pcs','Stainless Cooking Pot Set (7pcs)','home',72000,null,50,'new',4.7,96,240,'/products/nonstick-pot-set-5pcs.jpg','{"#22222a","#6a6a4a"}','Heavy-gauge stainless steel that lasts a generation.'),
+  ('table-top-gas-cooker-2burner','Table-Top Gas Cooker (2-Burner)','home',34000,42000,50,'deal',4.5,174,610,'/products/4-burner-gas-cooker.jpg','{"#241810","#8a5a2b"}','Compact double burner for the kitchen counter or hostel.'),
+  ('insulated-cooler-box-10l','Insulated Cooler Box (10L)','home',22000,null,50,null,4.4,132,430,'/products/insulated-food-flask.jpg','{"#2b1f2c","#8a6a7a"}','Keep drinks cold for the picnic, party or long trip.'),
+  ('dudu-osun-black-soap','Dudu-Osun Black Soap (Pack of 6)','beauty',4500,null,50,'bestseller',4.8,934,5200,'/products/dudu-osun-black-soap.jpg','{"#1c1a14","#5a4a2b"}','Classic African black soap for clear, healthy skin.'),
+  ('raw-shea-butter-ori','Raw Unrefined Shea Butter (Ori) 500g','beauty',6000,null,50,null,4.7,421,2800,'/products/raw-shea-butter-ori.jpg','{"#2c2618","#a8925a"}','Pure, unrefined ori for deep moisture, head to toe.'),
+  ('cold-pressed-coconut-oil','Cold-Pressed Coconut Oil 500ml','beauty',5500,7500,50,'deal',4.6,302,1900,'/products/cold-pressed-coconut-oil.jpg','{"#26261f","#9a9a7a"}','Virgin coconut oil for skin, hair and cooking.'),
+  ('matte-liquid-lipstick-set','Matte Liquid Lipstick Set','beauty',12000,null,50,'new',4.5,156,720,'/products/matte-liquid-lipstick-set.jpg','{"#3d1420","#b4485c"}','Long-wear matte shades made for melanin-rich skin.'),
+  ('black-soap-bar-3pack','African Black Soap Bar (3-Pack)','beauty',2800,3800,50,'deal',4.6,512,3100,'/products/dudu-osun-black-soap.jpg','{"#1c1a14","#5a4a2b"}','Handcrafted black soap bars — gentle daily cleansing.'),
+  ('whipped-shea-body-cream','Whipped Shea Body Cream 250g','beauty',7500,null,50,null,4.7,268,1400,'/products/raw-shea-butter-ori.jpg','{"#2c2618","#a8925a"}','Silky whipped shea with a light scent — never greasy.'),
+  ('coconut-hair-oil-250ml','Pure Coconut Hair Oil 250ml','beauty',4200,null,50,'new',4.5,187,990,'/products/cold-pressed-coconut-oil.jpg','{"#26261f","#9a9a7a"}','Nourishing coconut oil for stronger, shinier natural hair.'),
+  ('lip-gloss-trio','Glossy Lip Trio','beauty',8500,11000,50,'deal',4.4,143,610,'/products/matte-liquid-lipstick-set.jpg','{"#3d1420","#b4485c"}','Three high-shine glosses for an everyday glow.'),
+  ('golden-penny-rice-50kg','Golden Penny Rice 50kg','groceries',88000,null,50,'bestseller',4.7,688,4100,'/products/golden-penny-rice-50kg.jpg','{"#2c2410","#a8902b"}','A full bag of premium long-grain rice — stock the house.'),
+  ('ijebu-garri-bucket','Ijebu Garri (Painted Bucket)','groceries',12500,15000,50,'deal',4.6,233,1700,'/products/ijebu-garri-bucket.jpg','{"#2b2410","#9a8a3a"}','Crisp, sour Ijebu garri — a paint-bucket measure of goodness.'),
+  ('devon-kings-oil-25l','Devon King''s Vegetable Oil 25L','groceries',68000,null,50,null,4.5,174,820,'/products/devon-kings-oil-25l.jpg','{"#2c2810","#b0a02b"}','A full keg of pure vegetable oil for frying and cooking.'),
+  ('indomie-noodles-carton','Indomie Noodles (Carton of 40)','groceries',11000,null,50,'bestseller',4.8,1210,6800,'/products/indomie-noodles-carton.jpg','{"#3a2410","#c07a2b"}','The nation''s favourite — a full carton for the whole family.'),
+  ('peak-milk-powder-refill','Peak Milk Powder Refill 900g','groceries',9800,null,50,null,4.7,512,3300,null,'{"#1a2430","#5a7aa0"}','Rich, creamy milk for tea, pap and everything in between.'),
+  ('fresh-plantain-bunch','Fresh Plantain Bunch','groceries',4000,null,8,'new',4.4,98,1500,'/products/fresh-plantain-bunch.jpg','{"#1f2e14","#6a8a3a"}','Ripe, ready-to-fry plantain for dodo and boli.'),
+  ('mama-gold-rice-50kg','Mama Gold Rice 50kg','groceries',84000,92000,50,'deal',4.6,421,2600,'/products/golden-penny-rice-50kg.jpg','{"#2c2410","#b0982b"}','Well-milled parboiled rice — stone-free, swells beautifully.'),
+  ('yellow-garri-bag','Yellow Garri (Big Bag)','groceries',14500,null,50,null,4.5,156,900,'/products/ijebu-garri-bucket.jpg','{"#2c2810","#c0a03a"}','Palm-oil rich yellow garri for eba and soaking.'),
+  ('palm-oil-5l','Zomo Palm Oil 5L','groceries',16000,19500,50,'deal',4.6,204,1300,'/products/devon-kings-oil-25l.jpg','{"#3a1c10","#c0502b"}','Thick, red, unadulterated palm oil for soups and stews.'),
+  ('gold-tone-statement-ring','Gold-Tone Statement Ring','jewelry',24000,32000,50,'deal',4.7,186,640,'/products/jewelry-ring-set.jpg','{"#3a2c10","#c8a83c"}','A bold, gold-tone ring with a centre stone — statement-ready.'),
+  ('twisted-gold-cuff-bracelet','Twisted Gold Cuff Bracelet','jewelry',38000,null,50,'new',4.6,142,380,'/products/jewelry-cuff-bracelet.jpg','{"#2c2410","#b8902b"}','Hand-finished twisted cuff with a warm gold sheen.'),
+  ('18k-gold-plated-chain','18k Gold-Plated Chain Necklace','jewelry',45000,null,50,'bestseller',4.8,512,1100,'/products/jewelry-gold-chain.jpg','{"#332810","#caa63c"}','Tarnish-resistant 18k gold-plated chain with a classic pendant.'),
+  ('teardrop-gemstone-pendant','Teardrop Gemstone Pendant','jewelry',52000,68000,50,'deal',4.7,231,470,'/products/jewelry-gemstone-pendant.jpg','{"#3a1420","#b4485c"}','A cut gemstone teardrop set in gold — everyday elegance.'),
+  ('rough-uncut-gemstone','Raw Rough Gemstone (Uncut)','jewelry',30000,null,50,'new',4.5,88,160,'/products/jewelry-rough-gem.jpg','{"#2a1a2c","#9a5a7a"}','A natural, uncut gemstone specimen — for collectors and jewellers.')
+) as v(
+  slug, name, cat_slug, price, old_price, stock, badge, rating, review_count,
+  sold_count, image_url, swatch, blurb
+)
+join public.categories c on c.slug = v.cat_slug;
