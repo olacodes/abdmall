@@ -7,6 +7,9 @@ import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "@/lib/auth";
+import { CartProvider } from "@/lib/cart";
 import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
 import {
   HankenGrotesk_400Regular,
@@ -15,6 +18,8 @@ import {
 } from "@expo-google-fonts/hanken-grotesk";
 
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   // Keys must match the fontFamily names in tailwind.config.js.
@@ -33,12 +38,22 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CartProvider>
+            <SafeAreaProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="product/[slug]" />
+                <Stack.Screen name="checkout" />
+                <Stack.Screen name="sign-in" options={{ presentation: "modal" }} />
+                <Stack.Screen name="sign-up" options={{ presentation: "modal" }} />
+              </Stack>
+            </SafeAreaProvider>
+          </CartProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </GestureHandlerRootView>
   );
 }

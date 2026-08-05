@@ -13,3 +13,13 @@ major_version = 17
 [db.seed]
 enabled = true
 sql_paths = ["./seed.sql"]
+
+# Checkout functions must accept guest (unauthenticated) calls — guest checkout
+# is first-class. Auth is handled inside: a user JWT, when present, attaches the
+# order to that user; otherwise it's a guest order. The money path is verified
+# server-side regardless.
+[functions.checkout-start]
+verify_jwt = false
+
+[functions.checkout-confirm]
+verify_jwt = false
