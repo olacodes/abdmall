@@ -3,19 +3,26 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { readLastOrder, type Order } from "@/lib/order";
+import { useCart } from "@/lib/cart-context";
 import { formatNaira } from "@/lib/format";
 import { ButtonLink } from "@/components/ui/button";
 import { ArrowRight, Check, Truck, Shield } from "@/components/icons";
 
 export default function SuccessPage() {
+  const { clear } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    setOrder(readLastOrder());
+    const last = readLastOrder();
+    setOrder(last);
     setLoaded(true);
+    // Payment is verified by the time we reach this screen — safe to empty the
+    // cart now (we deliberately kept it until after a successful payment).
+    if (last) clear();
     /* eslint-enable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!loaded) {

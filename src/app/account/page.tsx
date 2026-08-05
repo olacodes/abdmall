@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser, signOut } from "@/lib/auth";
-import { readLastOrder } from "@/lib/order";
+import { createClient } from "@/lib/supabase/client";
 import {
-  mockOrders,
   statusMeta,
   type OrderStatus,
   type PastOrder,
@@ -73,29 +72,72 @@ function OrderCard({ order }: { order: PastOrder }) {
   );
 }
 
+// DB order_status → the display statuses the account UI understands.
+const DB_STATUS_TO_DISPLAY: Record<string, OrderStatus> = {
+  pending: "pending",
+  paid: "confirmed",
+  processing: "processing",
+  shipped: "shipped",
+  delivered: "delivered",
+  cancelled: "cancelled",
+};
+
+type OrderRow = {
+  reference: string;
+  created_at: string;
+  status: string;
+  total: number;
+  order_items: { name: string; quantity: number }[] | null;
+};
+
+function mapOrder(row: OrderRow): PastOrder {
+  return {
+    ref: row.reference,
+    date: new Date(row.created_at).toLocaleDateString("en-NG", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+    status: DB_STATUS_TO_DISPLAY[row.status] ?? "pending",
+    total: row.total,
+    items: (row.order_items ?? []).map((i) => ({
+      name: i.name,
+      qty: i.quantity,
+      swatch: ["#7a5a16", "#f3d98b"],
+    })),
+  };
+}
+
 export default function AccountPage() {
   const { user, loading } = useUser();
-  const [orders, setOrders] = useState<PastOrder[]>(mockOrders);
+  const [orders, setOrders] = useState<PastOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    const last = readLastOrder();
-    if (last) {
-      const asPast: PastOrder = {
-        ref: last.ref,
-        date: "Today",
-        status: "confirmed" as OrderStatus,
-        total: last.total,
-        items: last.items.map((i) => ({
-          name: i.name,
-          qty: i.qty,
-          swatch: ["#7a5a16", "#f3d98b"],
-        })),
-      };
-      setOrders([asPast, ...mockOrders]);
+    if (!user) {
+      setOrders([]);
+      setOrdersLoading(false);
+      return;
     }
+    let active = true;
+    setOrdersLoading(true);
+    const supabase = createClient();
+    // RLS scopes this to the signed-in user's own orders.
+    supabase
+      .from("orders")
+      .select("reference, created_at, status, total, order_items(name, quantity)")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!active) return;
+        setOrders(((data as OrderRow[] | null) ?? []).map(mapOrder));
+        setOrdersLoading(false);
+      });
+    return () => {
+      active = false;
+    };
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, []);
+  }, [user]);
 
   const doSignOut = () => {
     void signOut();
@@ -172,11 +214,31 @@ export default function AccountPage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {orders.map((order) => (
-            <OrderCard key={order.ref} order={order} />
-          ))}
-        </div>
+        {ordersLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="h-36 animate-pulse rounded-xl border border-line bg-surface-2" />
+            <div className="h-36 animate-pulse rounded-xl border border-line bg-surface-2" />
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-line bg-surface p-10 text-center">
+            <p className="font-semibold text-ink">No orders yet</p>
+            <p className="mt-2 text-sm text-muted">
+              When you place an order, it&rsquo;ll show up here.
+            </p>
+            <Link
+              href="/shop"
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-deep hover:opacity-80"
+            >
+              Start shopping <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {orders.map((order) => (
+              <OrderCard key={order.ref} order={order} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
