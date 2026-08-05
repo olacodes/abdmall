@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useCart } from "@/lib/cart";
 
 // Brand tokens (mirrors the web nav): gold active, muted inactive, hairline top.
 const GOLD = "#b8860b";
@@ -7,6 +8,8 @@ const MUTED = "#635b4f";
 const LINE = "#e8e2d6";
 
 export default function TabsLayout() {
+  const { count } = useCart();
+
   return (
     <Tabs
       screenOptions={{
@@ -39,6 +42,8 @@ export default function TabsLayout() {
         name="cart"
         options={{
           title: "Cart",
+          tabBarBadge: count > 0 ? count : undefined,
+          tabBarBadgeStyle: { backgroundColor: GOLD, color: "#14110b" },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" color={color} size={size} />
           ),

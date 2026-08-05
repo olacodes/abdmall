@@ -9,6 +9,7 @@ import {
   type Product,
 } from "@abdmall/core";
 import { useProducts, bySlug } from "@/lib/catalogue";
+import { useCart } from "@/lib/cart";
 import { ProductArt } from "@/components/product-art";
 
 function TopBar({ onBack }: { onBack: () => void }) {
@@ -28,6 +29,7 @@ function TopBar({ onBack }: { onBack: () => void }) {
 export default function ProductScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const { addItem } = useCart();
   const productsQ = useProducts();
   const product: Product | undefined = productsQ.data
     ? bySlug(productsQ.data, slug)
@@ -124,12 +126,23 @@ export default function ProductScreen() {
             {product.blurb}
           </Text>
 
-          {/* Add to cart (wired in M4) */}
+          {/* Add to cart */}
           <Pressable
-            onPress={() =>
-              Alert.alert("Cart", "Cart & checkout arrive in the next update.")
-            }
-            className="mt-3 h-13 flex-row items-center justify-center gap-2 rounded-full bg-gold py-4"
+            onPress={() => {
+              addItem({
+                id: product.id,
+                slug: product.slug,
+                name: product.name,
+                price: product.price,
+                swatch: product.swatch,
+                image: product.image,
+              });
+              Alert.alert("Added to cart", product.name, [
+                { text: "Keep shopping", style: "cancel" },
+                { text: "View cart", onPress: () => router.push("/cart") },
+              ]);
+            }}
+            className="mt-3 flex-row items-center justify-center gap-2 rounded-full bg-gold py-4"
           >
             <Ionicons name="cart-outline" size={18} color="#14110b" />
             <Text className="font-sans-bold text-sm text-brand">
