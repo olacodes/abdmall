@@ -1,63 +1,91 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { formatNaira } from "@abdmall/core";
+import { Link } from "expo-router";
+import { useCategories, useProducts, byCategory } from "@/lib/catalogue";
+import { CategoryTile } from "@/components/category-tile";
+import { ProductRail } from "@/components/product-rail";
 
-// M1 skeleton: proves the ported design system (tokens + fonts + NativeWind)
-// and the shared @abdmall/core package render. Real catalogue data lands in M2.
+const RAILS = [
+  { title: "Fashion & Native Wear", slug: "fashion" },
+  { title: "Phones, Power & Gadgets", slug: "electronics" },
+  { title: "Home & Kitchen", slug: "home" },
+  { title: "Beauty & Personal Care", slug: "beauty" },
+  { title: "Jewelry & Gemstones", slug: "jewelry" },
+  { title: "Groceries & Foodstuff", slug: "groceries" },
+];
+
 export default function HomeScreen() {
+  const productsQ = useProducts();
+  const categoriesQ = useCategories();
+
   return (
     <SafeAreaView className="flex-1 bg-paper" edges={["top"]}>
-      <ScrollView className="flex-1">
-        <View className="gap-5 p-5">
-          {/* Brand hero band */}
-          <View className="rounded-2xl bg-brand p-6">
-            <Text className="font-display text-3xl text-white">abdmall</Text>
-            <Text className="mt-1 font-sans text-base text-white/70">
-              Modern commerce, simplified.
-            </Text>
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
+        {/* Hero */}
+        <View className="rounded-2xl bg-brand p-6">
+          <Text className="font-display text-3xl text-white">abdmall</Text>
+          <Text className="mt-1 font-sans text-base text-white/70">
+            Shop everything you love, delivered.
+          </Text>
+          <Link href="/shop" asChild>
             <Pressable className="mt-5 self-start rounded-full bg-gold px-6 py-3">
-              <Text className="font-sans-bold text-sm text-brand">
-                Shop now
-              </Text>
+              <Text className="font-sans-bold text-sm text-brand">Shop now</Text>
             </Pressable>
-          </View>
-
-          {/* Design-system proof card */}
-          <View className="rounded-2xl border border-line bg-surface p-5">
-            <Text className="font-sans-bold text-lg text-ink">
-              Design system wired
-            </Text>
-            <Text className="mt-1 font-sans text-sm text-muted">
-              Theme tokens, Fraunces + Hanken fonts, and the shared
-              @abdmall/core package are live.
-            </Text>
-
-            <View className="mt-4 flex-row items-center gap-3">
-              <Text className="font-sans-bold text-2xl text-ink">
-                {formatNaira(135000)}
-              </Text>
-              <Text className="font-sans text-base text-faint line-through">
-                {formatNaira(185000)}
-              </Text>
-              <View className="rounded-md bg-sale px-2 py-1">
-                <Text className="font-sans-bold text-xs text-white">−27%</Text>
-              </View>
-            </View>
-
-            <View className="mt-4 flex-row items-center gap-2">
-              <View className="rounded-full bg-gold-soft px-3 py-1">
-                <Text className="font-sans-medium text-xs text-gold-deep">
-                  Free delivery over ₦100,000
-                </Text>
-              </View>
-              <View className="rounded-full bg-success/15 px-3 py-1">
-                <Text className="font-sans-medium text-xs text-success">
-                  In stock
-                </Text>
-              </View>
-            </View>
-          </View>
+          </Link>
         </View>
+
+        {(productsQ.isLoading || categoriesQ.isLoading) && (
+          <View className="items-center py-10">
+            <ActivityIndicator color="#b8860b" />
+          </View>
+        )}
+
+        {productsQ.isError && (
+          <View className="rounded-xl border border-line bg-surface p-5">
+            <Text className="font-sans text-sm text-sale">
+              Couldn&rsquo;t load the catalogue. Check your connection and try
+              again.
+            </Text>
+          </View>
+        )}
+
+        {/* Categories */}
+        {categoriesQ.data ? (
+          <View className="gap-3">
+            <Text className="font-display text-xl text-ink">
+              Shop by category
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12 }}
+            >
+              {categoriesQ.data.map((c) => (
+                <View key={c.slug} style={{ width: 140 }}>
+                  <CategoryTile category={c} />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        {/* Per-category product rails */}
+        {productsQ.data
+          ? RAILS.map((r) => (
+              <ProductRail
+                key={r.slug}
+                title={r.title}
+                categorySlug={r.slug}
+                products={byCategory(productsQ.data, r.slug)}
+              />
+            ))
+          : null}
       </ScrollView>
     </SafeAreaView>
   );
