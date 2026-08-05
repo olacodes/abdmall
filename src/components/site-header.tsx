@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { CartGlyph, Search, User, Whatsapp, Truck, Flame } from "@/components/icons";
 import { useCart } from "@/lib/cart-context";
+import { useUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/format";
 import type { Category } from "@/lib/mock-data";
 
@@ -54,6 +55,7 @@ function SearchForm() {
 
 export function SiteHeader({ categories }: { categories: Category[] }) {
   const { count, subtotal } = useCart();
+  const { user } = useUser();
 
   return (
     <header className="sticky top-0 z-50">
@@ -103,8 +105,12 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
             >
               <User className="h-6 w-6" />
               <span className="hidden text-left text-xs leading-tight lg:block">
-                <span className="block text-white/60">Account</span>
-                <span className="block font-semibold">Sign in</span>
+                <span className="block text-white/60">
+                  {user ? "Account" : "Hello, sign in"}
+                </span>
+                <span className="block max-w-[9rem] truncate font-semibold">
+                  {user ? user.name : "Sign in"}
+                </span>
               </span>
             </Link>
             <Link

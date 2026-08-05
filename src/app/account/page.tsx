@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getUser, signOut, type User } from "@/lib/auth";
+import { useUser, signOut } from "@/lib/auth";
 import { readLastOrder } from "@/lib/order";
 import {
   mockOrders,
@@ -74,13 +74,11 @@ function OrderCard({ order }: { order: PastOrder }) {
 }
 
 export default function AccountPage() {
-  const [user, setUserState] = useState<User | null>(null);
+  const { user, loading } = useUser();
   const [orders, setOrders] = useState<PastOrder[]>(mockOrders);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    setUserState(getUser());
     const last = readLastOrder();
     if (last) {
       const asPast: PastOrder = {
@@ -96,16 +94,14 @@ export default function AccountPage() {
       };
       setOrders([asPast, ...mockOrders]);
     }
-    setLoaded(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const doSignOut = () => {
-    signOut();
-    setUserState(null);
+    void signOut();
   };
 
-  if (!loaded) {
+  if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-20 sm:px-8">
         <div className="h-48 animate-pulse rounded-xl border border-line bg-surface-2" />
