@@ -4,6 +4,7 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
@@ -104,7 +105,16 @@ export default function AccountScreen() {
   // Signed-in
   return (
     <SafeAreaView className="flex-1 bg-paper" edges={["top"]}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, gap: 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={ordersQ.isRefetching}
+            onRefresh={() => ordersQ.refetch()}
+            tintColor="#b8860b"
+          />
+        }
+      >
         <View className="flex-row items-center justify-between">
           <View className="flex-1 flex-row items-center gap-3">
             <View className="h-14 w-14 items-center justify-center rounded-2xl bg-gold">

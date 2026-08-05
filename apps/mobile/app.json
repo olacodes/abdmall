@@ -8,9 +8,12 @@
     "scheme": "abdmall",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.abdmall.app",
+      "supportsTablet": true
     },
     "android": {
+      "package": "com.abdmall.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

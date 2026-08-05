@@ -4,6 +4,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
@@ -24,9 +25,23 @@ export default function HomeScreen() {
   const productsQ = useProducts();
   const categoriesQ = useCategories();
 
+  const onRefresh = () => {
+    productsQ.refetch();
+    categoriesQ.refetch();
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-paper" edges={["top"]}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, gap: 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={productsQ.isRefetching || categoriesQ.isRefetching}
+            onRefresh={onRefresh}
+            tintColor="#b8860b"
+          />
+        }
+      >
         {/* Hero */}
         <View className="rounded-2xl bg-brand p-6">
           <Text className="font-display text-3xl text-white">abdmall</Text>
