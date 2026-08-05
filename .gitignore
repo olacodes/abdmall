@@ -20,6 +20,12 @@ out/
 # turbo
 .turbo/
 
+# expo / react native
+.expo/
+dist/
+expo-env.d.ts
+*.hbc
+
 # production
 /build
 
