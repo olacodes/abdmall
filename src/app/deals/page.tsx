@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CatalogueView } from "@/components/catalogue/catalogue-view";
 import { Countdown } from "@/components/countdown";
 import { Flame } from "@/components/icons";
-import { categories, dealProducts } from "@/lib/mock-data";
+import { getDealProducts, getCategories } from "@/lib/catalogue";
 import { discountPercent } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -11,7 +11,12 @@ export const metadata: Metadata = {
   description: "Today's flash sales and discounted products on abdmall.",
 };
 
-export default function DealsPage() {
+export default async function DealsPage() {
+  const [dealProducts, categories] = await Promise.all([
+    getDealProducts(),
+    getCategories(),
+  ]);
+
   // Biggest discounts first — a different order from the homepage flash rail.
   const byDiscount = [...dealProducts].sort(
     (a, b) =>

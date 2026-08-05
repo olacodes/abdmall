@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CartProvider } from "@/lib/cart-context";
+import { getCategories } from "@/lib/catalogue";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -46,11 +47,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categories = await getCategories();
+
   return (
     <html
       lang="en"
@@ -61,11 +64,11 @@ export default function RootLayout({
           Skip to content
         </a>
         <CartProvider>
-          <SiteHeader />
+          <SiteHeader categories={categories} />
           <main id="main" className="flex-1">
             {children}
           </main>
-          <SiteFooter />
+          <SiteFooter categories={categories} />
         </CartProvider>
       </body>
     </html>

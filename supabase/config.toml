@@ -1,0 +1,15 @@
+# abdmall — Supabase project configuration.
+# Unspecified keys fall back to CLI defaults; we only pin what matters for this
+# project: the Postgres major version (matches the linked remote) and the seed
+# wiring so `supabase db reset` re-applies migrations then loads seed.sql.
+# Linked project ref: acmkyuwkfualxwlluwbs
+
+project_id = "abdmall"
+
+[db]
+# Keep in lockstep with the remote (Postgres 17) so local dev matches prod.
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

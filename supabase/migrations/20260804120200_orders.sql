@@ -4,16 +4,22 @@
 -- server (service role, after Paystack verification). Clients can read their
 -- own orders but can never write one — that's the "never trust the device" rule
 -- from the product document, enforced at the database.
+--
+-- Re-runnable: enum uses a duplicate-object guard, tables/indexes use
+-- `if not exists`, triggers use `create or replace`, policies dropped-then-created.
 -- ============================================================================
 
-create type public.order_status as enum
-  ('pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled');
+do $$ begin
+  create type public.order_status as enum
+    ('pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled');
+exception when duplicate_object then null;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Orders — delivery details are snapshotted onto the order.
 -- user_id is null for guest checkout.
 -- ---------------------------------------------------------------------------
-create table public.orders (
+create table if not exists public.orders (
   id                 uuid primary key default gen_random_uuid(),
   reference          text not null unique,          -- customer-facing ref, e.g. ABD-LQ8F3K-7420
   user_id            uuid references auth.users (id) on delete set null, -- null = guest
@@ -33,10 +39,10 @@ create table public.orders (
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
-create index orders_user_idx on public.orders (user_id);
-create index orders_status_idx on public.orders (status);
+create index if not exists orders_user_idx on public.orders (user_id);
+create index if not exists orders_status_idx on public.orders (status);
 
-create trigger orders_set_updated_at
+create or replace trigger orders_set_updated_at
   before update on public.orders
   for each row execute function public.set_updated_at();
 
@@ -44,7 +50,7 @@ create trigger orders_set_updated_at
 -- Order items — name/price/image snapshotted at purchase, so later catalogue
 -- edits never rewrite history. product_id kept nullable for the same reason.
 -- ---------------------------------------------------------------------------
-create table public.order_items (
+create table if not exists public.order_items (
   id         uuid primary key default gen_random_uuid(),
   order_id   uuid not null references public.orders (id) on delete cascade,
   product_id uuid references public.products (id) on delete set null,
@@ -54,7 +60,7 @@ create table public.order_items (
   size       text,
   quantity   integer not null check (quantity > 0)
 );
-create index order_items_order_idx on public.order_items (order_id);
+create index if not exists order_items_order_idx on public.order_items (order_id);
 
 -- ---------------------------------------------------------------------------
 -- RLS — signed-in customers read only their own orders.
@@ -65,10 +71,12 @@ create index order_items_order_idx on public.order_items (order_id);
 alter table public.orders      enable row level security;
 alter table public.order_items enable row level security;
 
+drop policy if exists "Users can view their own orders" on public.orders;
 create policy "Users can view their own orders"
   on public.orders for select
   using ((select auth.uid()) = user_id);
 
+drop policy if exists "Users can view items of their own orders" on public.order_items;
 create policy "Users can view items of their own orders"
   on public.order_items for select
   using (exists (

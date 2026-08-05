@@ -4,20 +4,29 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthShell, AuthField } from "@/components/auth/auth-shell";
-import { setUser } from "@/lib/auth";
+import { signIn } from "@/lib/auth";
 import { ArrowRight } from "@/components/icons";
 
 export default function SignInPage() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "");
+    const password = String(form.get("password") ?? "");
     setBusy(true);
-    setUser({ email, name: email.split("@")[0] || "Shopper" });
-    setTimeout(() => router.push("/account"), 400);
+    setError(null);
+    const { error } = await signIn(email, password);
+    if (error) {
+      setError(error);
+      setBusy(false);
+      return;
+    }
+    router.push("/account");
+    router.refresh();
   };
 
   return (
@@ -35,6 +44,14 @@ export default function SignInPage() {
       }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-sale/30 bg-sale/10 px-4 py-3 text-sm font-medium text-sale"
+          >
+            {error}
+          </p>
+        )}
         <AuthField
           label="Email"
           name="email"

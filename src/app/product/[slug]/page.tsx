@@ -10,13 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Star, Truck, Shield, Wallet, Whatsapp } from "@/components/icons";
 import { compactCount } from "@/lib/format";
 import {
-  categories,
-  getProduct,
-  products,
-  type Product,
-} from "@/lib/mock-data";
+  getCategories,
+  getProductBySlug,
+  getProducts,
+} from "@/lib/catalogue";
+import type { Product } from "@/lib/mock-data";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getProducts();
   return products.map((p) => ({ slug: p.slug }));
 }
 
@@ -26,7 +27,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return { title: "Product not found" };
   return {
     title: product.name,
@@ -35,11 +36,11 @@ export async function generateMetadata({
   };
 }
 
-function relatedTo(product: Product): Product[] {
-  const sameCat = products.filter(
+function relatedTo(product: Product, all: Product[]): Product[] {
+  const sameCat = all.filter(
     (p) => p.category === product.category && p.id !== product.id,
   );
-  const others = products.filter(
+  const others = all.filter(
     (p) => p.category !== product.category && p.id !== product.id,
   );
   return [...sameCat, ...others].slice(0, 5);
@@ -53,13 +54,17 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const [product, categories, products] = await Promise.all([
+    getProductBySlug(slug),
+    getCategories(),
+    getProducts(),
+  ]);
   if (!product) notFound();
 
   const category = categories.find((c) => c.slug === product.category);
   const sizes =
     product.category === "fashion" ? ["S", "M", "L", "XL"] : undefined;
-  const related = relatedTo(product);
+  const related = relatedTo(product, products);
   const lowStock = product.stock !== undefined && product.stock <= 8;
 
   return (

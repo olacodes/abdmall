@@ -2,6 +2,10 @@
 -- abdmall — 01. Catalogue
 -- Enums, categories, products, full-text search, and public-read RLS.
 -- Mirrors the shapes in src/lib/mock-data.ts so the frontend swaps 1:1.
+--
+-- Written to be re-runnable: types use a duplicate-object guard, tables/indexes
+-- use `if not exists`, triggers use `create or replace`, and policies are
+-- dropped-then-created. A partial failure can be replayed without wedging.
 -- ============================================================================
 
 create extension if not exists pgcrypto; -- gen_random_uuid()
@@ -17,12 +21,16 @@ begin
 end;
 $$;
 
-create type public.product_badge as enum ('new', 'deal', 'bestseller');
+-- Enums have no `create ... if not exists`; guard against a replay.
+do $$ begin
+  create type public.product_badge as enum ('new', 'deal', 'bestseller');
+exception when duplicate_object then null;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Categories
 -- ---------------------------------------------------------------------------
-create table public.categories (
+create table if not exists public.categories (
   id         uuid primary key default gen_random_uuid(),
   slug       text not null unique,
   name       text not null,
@@ -36,7 +44,7 @@ create table public.categories (
 -- ---------------------------------------------------------------------------
 -- Products
 -- ---------------------------------------------------------------------------
-create table public.products (
+create table if not exists public.products (
   id            uuid primary key default gen_random_uuid(),
   slug          text not null unique,
   name          text not null,
@@ -60,12 +68,12 @@ create table public.products (
   ) stored
 );
 
-create index products_category_idx on public.products (category_id);
-create index products_search_idx   on public.products using gin (search_vector);
+create index if not exists products_category_idx on public.products (category_id);
+create index if not exists products_search_idx   on public.products using gin (search_vector);
 -- Partial index to list deals quickly (products with a strike price).
-create index products_deals_idx     on public.products (id) where old_price is not null;
+create index if not exists products_deals_idx     on public.products (id) where old_price is not null;
 
-create trigger products_set_updated_at
+create or replace trigger products_set_updated_at
   before update on public.products
   for each row execute function public.set_updated_at();
 
@@ -77,10 +85,12 @@ create trigger products_set_updated_at
 alter table public.categories enable row level security;
 alter table public.products   enable row level security;
 
+drop policy if exists "Categories are readable by everyone" on public.categories;
 create policy "Categories are readable by everyone"
   on public.categories for select
   using (true);
 
+drop policy if exists "Active products are readable by everyone" on public.products;
 create policy "Active products are readable by everyone"
   on public.products for select
   using (is_active);

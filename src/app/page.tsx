@@ -13,11 +13,8 @@ import {
   Whatsapp,
   Flame,
 } from "@/components/icons";
-import {
-  categories,
-  dealProducts,
-  productsByCategory,
-} from "@/lib/mock-data";
+import { getCategories, getProducts, getDealProducts } from "@/lib/catalogue";
+import { discountPercent } from "@/lib/format";
 
 const services = [
   { icon: Truck, title: "Free delivery", note: "On orders over ₦100,000" },
@@ -26,7 +23,19 @@ const services = [
   { icon: Whatsapp, title: "Order on WhatsApp", note: "We're one tap away" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const [categories, products, dealProducts] = await Promise.all([
+    getCategories(),
+    getProducts(),
+    getDealProducts(),
+  ]);
+  const byCategory = (slug: string) =>
+    products.filter((p) => p.category === slug);
+  const maxOff = Math.max(
+    0,
+    ...dealProducts.map((p) => discountPercent(p.oldPrice!, p.price)),
+  );
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-5 sm:px-8">
       {/* ===== HERO ROW ===== */}
@@ -47,7 +56,7 @@ export default function Home() {
           </ul>
         </aside>
 
-        <HeroCarousel />
+        <HeroCarousel maxOff={maxOff} />
       </section>
 
       {/* ===== SERVICE STRIP ===== */}
@@ -112,12 +121,12 @@ export default function Home() {
       <ProductRail
         title="Fashion & Native Wear"
         href="/categories/fashion"
-        products={productsByCategory("fashion")}
+        products={byCategory("fashion")}
       />
       <ProductRail
         title="Phones, Power & Gadgets"
         href="/categories/electronics"
-        products={productsByCategory("electronics")}
+        products={byCategory("electronics")}
       />
 
       {/* app-download band */}
@@ -153,22 +162,22 @@ export default function Home() {
       <ProductRail
         title="Home & Kitchen"
         href="/categories/home"
-        products={productsByCategory("home")}
+        products={byCategory("home")}
       />
       <ProductRail
         title="Beauty & Personal Care"
         href="/categories/beauty"
-        products={productsByCategory("beauty")}
+        products={byCategory("beauty")}
       />
       <ProductRail
         title="Jewelry & Gemstones"
         href="/categories/jewelry"
-        products={productsByCategory("jewelry")}
+        products={byCategory("jewelry")}
       />
       <ProductRail
         title="Groceries & Foodstuff"
         href="/categories/groceries"
-        products={productsByCategory("groceries")}
+        products={byCategory("groceries")}
       />
 
       {/* ===== NEWSLETTER ===== */}
