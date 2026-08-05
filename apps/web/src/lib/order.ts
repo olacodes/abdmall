@@ -1,20 +1,8 @@
-import type { CartItem } from "./cart-context";
-
-export type Order = {
-  ref: string;
-  createdAt: string;
-  email: string;
-  name: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  method: "card" | "transfer";
-  items: Pick<CartItem, "name" | "qty" | "price" | "size">[];
-  subtotal: number;
-  delivery: number;
-  total: number;
-};
+// Order shape lives in @abdmall/core (shared with mobile); re-exported so
+// existing "@/lib/order" type imports keep working. The sessionStorage helpers
+// below are browser-only and stay in the web app.
+import type { Order } from "@abdmall/core";
+export type { Order };
 
 const KEY = "abdmall:lastOrder";
 
