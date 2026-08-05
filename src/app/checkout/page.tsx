@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatNaira } from "@/lib/format";
-import { generateOrderRef, saveLastOrder, type Order } from "@/lib/order";
+import { saveLastOrder } from "@/lib/order";
+import { startCheckout } from "./actions";
 import { ButtonLink } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -51,10 +51,10 @@ function Field({
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { items, subtotal, delivery, total, clear, hydrated } = useCart();
+  const { items, subtotal, delivery, total, hydrated } = useCart();
   const [method, setMethod] = useState<Method>("card");
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (hydrated && items.length === 0 && !processing) {
     return (
@@ -73,12 +73,15 @@ export default function CheckoutPage() {
     );
   }
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const order: Order = {
-      ref: generateOrderRef(),
-      createdAt: new Date().toISOString(),
+    setProcessing(true);
+    setError(null);
+
+    // The server recomputes every amount from the database — we only send the
+    // cart lines (slug/size/qty) and the delivery details.
+    const res = await startCheckout({
       email: String(form.get("email") ?? ""),
       name: String(form.get("name") ?? ""),
       phone: String(form.get("phone") ?? ""),
@@ -86,26 +89,19 @@ export default function CheckoutPage() {
       city: String(form.get("city") ?? ""),
       state: String(form.get("state") ?? ""),
       method,
-      items: items.map((i) => ({
-        name: i.name,
-        qty: i.qty,
-        price: i.price,
-        size: i.size,
-      })),
-      subtotal,
-      delivery,
-      total,
-    };
+      lines: items.map((i) => ({ slug: i.slug, size: i.size, qty: i.qty })),
+    });
 
-    setProcessing(true);
-    // Simulates the Paystack handoff + server-side verification round-trip.
-    // In production this posts to our backend, which verifies the transaction
-    // with Paystack before the order is ever marked paid.
-    setTimeout(() => {
-      saveLastOrder(order);
-      clear();
-      router.push("/checkout/success");
-    }, 1400);
+    if (!res.ok) {
+      setError(res.error);
+      setProcessing(false);
+      return;
+    }
+
+    // Stash the server-computed order for the success screen, then hand off to
+    // Paystack. The cart is cleared on success (after payment is verified).
+    saveLastOrder(res.order);
+    window.location.href = res.authorizationUrl;
   };
 
   return (
@@ -251,6 +247,15 @@ export default function CheckoutPage() {
               </div>
             </dl>
 
+            {error && (
+              <p
+                role="alert"
+                className="mt-5 rounded-lg border border-sale/30 bg-sale/10 px-4 py-3 text-sm font-medium text-sale"
+              >
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
               disabled={processing}
@@ -259,7 +264,7 @@ export default function CheckoutPage() {
               {processing ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand/40 border-t-brand" />
-                  Verifying payment…
+                  Redirecting to Paystack…
                 </>
               ) : (
                 <>
