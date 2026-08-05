@@ -8,30 +8,11 @@
  * feel stocked). Swap for real seller photography at launch.
  */
 
-export type Category = {
-  slug: string;
-  name: string;
-  tagline: string;
-  hue: [string, string];
-  image: string;
-};
-
-export type Product = {
-  id: string;
-  slug: string;
-  name: string;
-  category: string; // category slug
-  price: number;
-  oldPrice?: number;
-  rating: number;
-  reviews: number;
-  sold?: number;
-  stock?: number; // low numbers drive urgency cues
-  badge?: "new" | "deal" | "bestseller";
-  swatch: [string, string];
-  image?: string; // omit to use gradient fallback
-  blurb: string;
-};
+// Domain types now live in @abdmall/core (shared with mobile); re-exported so
+// existing "@/lib/mock-data" type imports keep working. This module remains the
+// seed source of truth (see scripts/generate-seed.ts).
+import type { Category, Product } from "@abdmall/core";
+export type { Category, Product };
 
 const img = (fileSlug: string) => `/products/${fileSlug}.jpg`;
 

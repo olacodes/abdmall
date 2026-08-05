@@ -9,32 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { deliveryFor } from "./format";
+// Cart types now live in @abdmall/core (shared with mobile).
+import type { CartItem, AddPayload } from "@abdmall/core";
 
 export { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD, deliveryFor } from "./format";
-
-export type CartItem = {
-  /** Unique line key: product id + size (a product in two sizes = two lines). */
-  key: string;
-  productId: string;
-  slug: string;
-  name: string;
-  price: number;
-  swatch: [string, string];
-  image?: string;
-  size?: string;
-  qty: number;
-};
-
-export type AddPayload = {
-  id: string;
-  slug: string;
-  name: string;
-  price: number;
-  swatch: [string, string];
-  image?: string;
-  size?: string;
-  qty?: number;
-};
+// Re-exported so existing "@/lib/cart-context" type imports keep working.
+export type { CartItem, AddPayload };
 
 type CartContextValue = {
   items: CartItem[];
