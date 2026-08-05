@@ -9,7 +9,8 @@ import { dirname, join } from "node:path";
 import { categories, products } from "../src/lib/mock-data";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outPath = join(here, "..", "supabase", "seed.sql");
+// supabase/ lives at the monorepo root (apps/web/scripts → ../../.. → root).
+const outPath = join(here, "..", "..", "..", "supabase", "seed.sql");
 
 const esc = (s: string) => s.replace(/'/g, "''");
 const textArr = (a: string[]) => `'{${a.map((x) => `"${x}"`).join(",")}}'`;

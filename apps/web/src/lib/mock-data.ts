@@ -14,7 +14,11 @@
 import type { Category, Product } from "@abdmall/core";
 export type { Category, Product };
 
-const img = (fileSlug: string) => `/products/${fileSlug}.jpg`;
+// Product imagery is hosted in the public Supabase Storage bucket
+// (product-images). Uploaded via apps/web/scripts/upload-product-images.mts.
+const STORAGE_BASE =
+  "https://acmkyuwkfualxwlluwbs.supabase.co/storage/v1/object/public/product-images";
+const img = (fileSlug: string) => `${STORAGE_BASE}/${fileSlug}.jpg`;
 
 export const categories: Category[] = [
   {
