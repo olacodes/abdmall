@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
 import { CategoryTile } from "@/components/ui/category-tile";
-import { categories, productsByCategory } from "@/lib/mock-data";
+import { getCategories, getProducts } from "@/lib/catalogue";
 
 export const metadata: Metadata = {
   title: "Categories",
   description: "Browse abdmall by category.",
 };
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const [categories, products] = await Promise.all([
+    getCategories(),
+    getProducts(),
+  ]);
+  const countFor = (slug: string) =>
+    products.filter((p) => p.category === slug).length;
+
   return (
     <>
       <PageHeader
@@ -24,7 +31,7 @@ export default function CategoriesPage() {
                 className={`min-h-[240px] ${i === 0 ? "col-span-2 lg:col-span-2" : ""}`}
               />
               <span className="pointer-events-none absolute right-5 top-5 rounded-full border border-white/20 bg-black/40 px-3 py-1 font-mono text-xs text-white/80 backdrop-blur">
-                {productsByCategory(cat.slug).length} items
+                {countFor(cat.slug)} items
               </span>
             </div>
           ))}

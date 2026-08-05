@@ -1,34 +1,6 @@
 import Link from "next/link";
 import { CartGlyph, Shield, Truck, Wallet, Whatsapp } from "@/components/icons";
-import { categories } from "@/lib/mock-data";
-
-const columns = [
-  {
-    title: "Shop",
-    links: categories.map((c) => ({
-      label: c.name,
-      href: `/categories/${c.slug}`,
-    })),
-  },
-  {
-    title: "Support",
-    links: [
-      { label: "Help Center", href: "/account" },
-      { label: "Track Order", href: "/account" },
-      { label: "Returns & Refunds", href: "#" },
-      { label: "Contact Us", href: "#" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { label: "About abdmall", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms of Service", href: "#" },
-    ],
-  },
-];
+import type { Category } from "@/lib/mock-data";
 
 const trust = [
   { icon: Shield, label: "Secure, verified payments" },
@@ -38,7 +10,35 @@ const trust = [
 
 const payments = ["Paystack", "Visa", "Mastercard", "Verve"];
 
-export function SiteFooter() {
+export function SiteFooter({ categories }: { categories: Category[] }) {
+  const columns = [
+    {
+      title: "Shop",
+      links: categories.map((c) => ({
+        label: c.name,
+        href: `/categories/${c.slug}`,
+      })),
+    },
+    {
+      title: "Support",
+      links: [
+        { label: "Help Center", href: "/account" },
+        { label: "Track Order", href: "/account" },
+        { label: "Returns & Refunds", href: "#" },
+        { label: "Contact Us", href: "#" },
+      ],
+    },
+    {
+      title: "Company",
+      links: [
+        { label: "About abdmall", href: "#" },
+        { label: "Careers", href: "#" },
+        { label: "Privacy Policy", href: "#" },
+        { label: "Terms of Service", href: "#" },
+      ],
+    },
+  ];
+
   return (
     <footer className="mt-16 bg-brand text-white">
       {/* trust strip */}

@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { CartGlyph, Search, User, Whatsapp, Truck, Flame } from "@/components/icons";
 import { useCart } from "@/lib/cart-context";
 import { formatNaira } from "@/lib/format";
-import { categories } from "@/lib/mock-data";
+import type { Category } from "@/lib/mock-data";
 
 function Wordmark() {
   return (
@@ -52,7 +52,7 @@ function SearchForm() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ categories }: { categories: Category[] }) {
   const { count, subtotal } = useCart();
 
   return (

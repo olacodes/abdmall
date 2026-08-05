@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
 import { CatalogueView } from "@/components/catalogue/catalogue-view";
-import { categories, products } from "@/lib/mock-data";
+import { getProducts, getCategories } from "@/lib/catalogue";
 
 export const metadata: Metadata = {
   title: "New In",
   description: "The latest arrivals on abdmall.",
 };
 
-export default function NewPage() {
+export default async function NewPage() {
+  const [products, categories] = await Promise.all([
+    getProducts(),
+    getCategories(),
+  ]);
+
   return (
     <>
       <PageHeader

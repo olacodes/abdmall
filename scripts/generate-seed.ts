@@ -38,20 +38,20 @@ const categoriesSql =
 
 const prodRows = products
   .map(
-    (p) =>
-      `  ('${p.slug}','${esc(p.name)}','${p.category}',${p.price},${intOrNull(p.oldPrice)},${p.stock ?? 50},${strOrNull(p.badge)},${p.rating},${p.reviews},${p.sold ?? 0},${strOrNull(p.image)},${textArr(p.swatch)},'${esc(p.blurb)}')`,
+    (p, i) =>
+      `  ('${p.slug}','${esc(p.name)}','${p.category}',${p.price},${intOrNull(p.oldPrice)},${p.stock ?? 50},${strOrNull(p.badge)},${p.rating},${p.reviews},${p.sold ?? 0},${strOrNull(p.image)},${textArr(p.swatch)},'${esc(p.blurb)}',${i + 1})`,
   )
   .join(",\n");
 
 const productsSql =
   `insert into public.products\n` +
-  `  (slug, name, category_id, price, old_price, stock, badge, rating, review_count, sold_count, image_url, swatch, blurb)\n` +
+  `  (slug, name, category_id, price, old_price, stock, badge, rating, review_count, sold_count, image_url, swatch, blurb, sort_order)\n` +
   `select v.slug, v.name, c.id, v.price, v.old_price, v.stock,\n` +
   `       v.badge::public.product_badge, v.rating, v.review_count, v.sold_count,\n` +
-  `       v.image_url, v.swatch::text[], v.blurb\n` +
+  `       v.image_url, v.swatch::text[], v.blurb, v.sort_order\n` +
   `from (values\n${prodRows}\n) as v(\n` +
   `  slug, name, cat_slug, price, old_price, stock, badge, rating, review_count,\n` +
-  `  sold_count, image_url, swatch, blurb\n)\n` +
+  `  sold_count, image_url, swatch, blurb, sort_order\n)\n` +
   `join public.categories c on c.slug = v.cat_slug;\n`;
 
 writeFileSync(outPath, header + categoriesSql + productsSql);

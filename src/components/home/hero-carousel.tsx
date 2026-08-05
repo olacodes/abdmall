@@ -2,49 +2,46 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "@/components/icons";
-import { dealProducts } from "@/lib/mock-data";
-import { discountPercent } from "@/lib/format";
 
-const maxOff = Math.max(
-  0,
-  ...dealProducts.map((p) => discountPercent(p.oldPrice!, p.price)),
-);
-
-const slides = [
-  {
-    badge: "Owambe Season Sale",
-    title: `Save up to ${maxOff}% on fashion`,
-    sub: "Ankara, agbada, native wear & more — ready for the next big day.",
-    href: "/categories/fashion",
-    image: "/products/agbada-senator-3-piece.jpg",
-  },
-  {
-    badge: "No More Darkness",
-    title: "Power up your home",
-    sub: "Generators, rechargeable fans, solar lamps & power banks.",
-    href: "/categories/electronics",
-    image: "/products/i-pass-my-neighbour-generator.jpg",
-  },
-  {
-    badge: "New: Jewelry",
-    title: "Gold, gems & everyday shine",
-    sub: "Rings, chains, bracelets and gemstones — now on abdmall.",
-    href: "/categories/jewelry",
-    image: "/products/jewelry-gold-chain.jpg",
-  },
-  {
-    badge: "Market Run",
-    title: "Foodstuff, delivered",
-    sub: "Rice, oil, garri and daily essentials — straight to your door.",
-    href: "/categories/groceries",
-    image: "/products/golden-penny-rice-50kg.jpg",
-  },
-];
-
-export function HeroCarousel() {
+export function HeroCarousel({ maxOff }: { maxOff: number }) {
   const [active, setActive] = useState(0);
+
+  // maxOff is the real deepest discount, computed server-side from live deals.
+  const slides = useMemo(
+    () => [
+    {
+      badge: "Owambe Season Sale",
+      title: `Save up to ${maxOff}% on fashion`,
+      sub: "Ankara, agbada, native wear & more — ready for the next big day.",
+      href: "/categories/fashion",
+      image: "/products/agbada-senator-3-piece.jpg",
+    },
+    {
+      badge: "No More Darkness",
+      title: "Power up your home",
+      sub: "Generators, rechargeable fans, solar lamps & power banks.",
+      href: "/categories/electronics",
+      image: "/products/i-pass-my-neighbour-generator.jpg",
+    },
+    {
+      badge: "New: Jewelry",
+      title: "Gold, gems & everyday shine",
+      sub: "Rings, chains, bracelets and gemstones — now on abdmall.",
+      href: "/categories/jewelry",
+      image: "/products/jewelry-gold-chain.jpg",
+    },
+    {
+      badge: "Market Run",
+      title: "Foodstuff, delivered",
+      sub: "Rice, oil, garri and daily essentials — straight to your door.",
+      href: "/categories/groceries",
+      image: "/products/golden-penny-rice-50kg.jpg",
+    },
+  ],
+    [maxOff],
+  );
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -53,7 +50,7 @@ export function HeroCarousel() {
       5500,
     );
     return () => clearInterval(id);
-  }, []);
+  }, [slides.length]);
 
   return (
     <div className="relative h-[260px] overflow-hidden rounded-xl sm:h-[340px] lg:h-[400px]">
