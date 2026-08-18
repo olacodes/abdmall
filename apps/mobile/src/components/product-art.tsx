@@ -3,12 +3,21 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import type { Product } from "@abdmall/core";
 
+/** Anything that can be pictured — a Product, or a CartItem line. */
+type Subject = Pick<Product, "name" | "swatch" | "image">;
+
 /**
  * Product image — the real photo from Supabase Storage when available, over a
  * swatch-gradient + monogram that shows while loading or as a fallback for
- * products without a photo.
+ * products without a photo. `compact` suits thumbnail-sized tiles.
  */
-export function ProductArt({ product }: { product: Product }) {
+export function ProductArt({
+  product,
+  compact = false,
+}: {
+  product: Subject;
+  compact?: boolean;
+}) {
   const monogram = product.name
     .split(" ")
     .slice(0, 2)
@@ -23,7 +32,11 @@ export function ProductArt({ product }: { product: Product }) {
         end={{ x: 1, y: 1 }}
         style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center" }]}
       >
-        <Text className="font-display text-3xl text-white/85">{monogram}</Text>
+        <Text
+          className={`font-display text-white/85 ${compact ? "text-base" : "text-3xl"}`}
+        >
+          {monogram}
+        </Text>
       </LinearGradient>
       {product.image ? (
         <Image

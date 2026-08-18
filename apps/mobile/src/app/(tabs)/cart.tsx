@@ -1,9 +1,9 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { formatNaira, type CartItem } from "@abdmall/core";
+import { ProductArt } from "@/components/product-art";
 import { useCart } from "@/lib/cart";
 
 function QtyButton({
@@ -35,12 +35,9 @@ function Row({
 }) {
   return (
     <View className="flex-row gap-3 rounded-xl border border-line bg-surface p-3">
-      <LinearGradient
-        colors={[item.swatch[0], item.swatch[1]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ width: 64, height: 64, borderRadius: 8 }}
-      />
+      <View className="h-16 w-16 overflow-hidden rounded-lg">
+        <ProductArt product={item} compact />
+      </View>
       <View className="flex-1 justify-between">
         <View className="flex-row items-start justify-between gap-2">
           <Text numberOfLines={2} className="flex-1 font-sans-medium text-sm text-ink">
