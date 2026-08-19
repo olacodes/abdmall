@@ -22,7 +22,10 @@ export function ProductCard({ product }: { product: Product }) {
       href={{ pathname: "/product/[slug]", params: { slug: product.slug } }}
       asChild
     >
-      <Pressable className="flex-1 overflow-hidden rounded-xl border border-line bg-surface">
+      {/* shrink-0: `flex-1` alone lets a row compress the card, and the first
+          thing to give is the aspect-square image — it collapses to a sliver
+          rather than the card overflowing. */}
+      <Pressable className="flex-1 shrink-0 overflow-hidden rounded-xl border border-line bg-surface">
         <View className="relative aspect-square">
           <ProductArt product={product} />
           {off > 0 ? (

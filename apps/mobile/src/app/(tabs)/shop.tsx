@@ -1,15 +1,33 @@
 import { useMemo, useState } from "react";
-import { View, Text, TextInput, FlatList, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  ActivityIndicator,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useProducts } from "@/lib/catalogue";
 import { ProductCard } from "@/components/product-card";
 
+const GUTTER = 16;
+const GAP = 12;
+
 export default function ShopScreen() {
   const params = useLocalSearchParams<{ category?: string; q?: string }>();
   const productsQ = useProducts();
   const [query, setQuery] = useState(params.q ?? "");
+
+  // Cards get a definite width rather than `flex-1`. A card's height comes
+  // from its aspect-square image, so a width Yoga has to derive from flex
+  // leaves the height indefinite too — on Android that surfaces as squashed
+  // images and blank bands as cells recycle. The Home rails have never shown
+  // this, and they size cards with a fixed width.
+  const { width } = useWindowDimensions();
+  const colWidth = Math.floor((width - GUTTER * 2 - GAP) / 2);
 
   const items = useMemo(() => {
     let list = productsQ.data ?? [];
@@ -51,15 +69,15 @@ export default function ShopScreen() {
           data={items}
           keyExtractor={(p) => p.id}
           numColumns={2}
-          columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-          contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
+          columnWrapperStyle={{ gap: GAP, paddingHorizontal: GUTTER }}
+          contentContainerStyle={{ gap: GAP, paddingBottom: 24 }}
           // Defaults to true on Android (RN's FlatList.js), which detaches
           // scrolled-past cells from the native view tree and leaves blank
           // bands when they fail to re-attach. These cells are tall and
           // image-heavy, so it happens readily here.
           removeClippedSubviews={false}
           renderItem={({ item }) => (
-            <View className="flex-1">
+            <View style={{ width: colWidth }}>
               <ProductCard product={item} />
             </View>
           )}
