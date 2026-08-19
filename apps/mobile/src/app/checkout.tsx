@@ -53,8 +53,17 @@ export default function Checkout() {
   const set = (k: keyof typeof form) => (v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
+  // Mirrors what checkout-start requires (its index.ts:35) — email, name and
+  // address. Phone, city and state are optional there, so they aren't gated
+  // here either; the server stays the authority.
+  const canPay =
+    items.length > 0 &&
+    /\S+@\S+\.\S+/.test(form.email.trim()) &&
+    form.name.trim().length > 0 &&
+    form.address.trim().length > 0;
+
   const pay = async () => {
-    if (busy) return;
+    if (busy || !canPay) return;
     setBusy(true);
     setError(null);
     const res = await startCheckout({
@@ -370,9 +379,9 @@ export default function Checkout() {
 
           <Pressable
             onPress={pay}
-            disabled={busy}
+            disabled={busy || !canPay}
             className="flex-row items-center justify-center gap-2 rounded-full bg-gold py-4"
-            style={busy ? { opacity: 0.7 } : undefined}
+            style={busy || !canPay ? { opacity: 0.45 } : undefined}
           >
             {busy ? (
               <ActivityIndicator color="#14110b" />
@@ -386,7 +395,9 @@ export default function Checkout() {
             )}
           </Pressable>
           <Text className="pb-6 text-center font-sans text-xs text-faint">
-            Payment is verified server-side before your order is confirmed.
+            {canPay
+              ? "Payment is verified server-side before your order is confirmed."
+              : "Add your email, full name and delivery address to continue."}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
