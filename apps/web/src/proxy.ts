@@ -35,7 +35,20 @@ export async function proxy(request: NextRequest) {
   );
 
   // Touch the user to trigger a refresh; the setAll above persists new tokens.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // The one route this gates. Redirecting from the /admin layout instead would
+  // work, but `redirect()` in a streaming render emits a client-side meta
+  // refresh rather than a 307, so the visitor sees a 404 flash for a second
+  // first. Here it's a real redirect. Whether that user is actually an admin
+  // is still decided by requireAdmin() and, ultimately, by RLS.
+  if (!user && request.nextUrl.pathname.startsWith("/admin")) {
+    const signIn = NextResponse.redirect(new URL("/sign-in", request.url));
+    for (const cookie of response.cookies.getAll()) signIn.cookies.set(cookie);
+    return signIn;
+  }
 
   return response;
 }

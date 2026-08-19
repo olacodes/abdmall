@@ -3,6 +3,7 @@ import { Fraunces, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { StorefrontOnly } from "@/components/storefront-only";
 import { CartProvider } from "@/lib/cart-context";
 import { getCategories } from "@/lib/catalogue";
 
@@ -68,7 +69,9 @@ export default async function RootLayout({
           <main id="main" className="flex-1">
             {children}
           </main>
-          <SiteFooter categories={categories} />
+          <StorefrontOnly>
+            <SiteFooter categories={categories} />
+          </StorefrontOnly>
         </CartProvider>
       </body>
     </html>
