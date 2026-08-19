@@ -2,6 +2,12 @@
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
+  // Class strategy, not Tailwind's default "media". On web, NativeWind's
+  // runtime waits for the stylesheet with a MutationObserver and then calls
+  // colorScheme.set() unconditionally — which throws under "media"
+  // (react-native-css-interop/runtime/web/color-scheme.js:45). The storefront
+  // is a light theme with no dark: variants, so this only stops the crash.
+  darkMode: "class",
   theme: {
     extend: {
       // Ported from the web app's globals.css tokens (light commerce theme).
