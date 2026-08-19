@@ -24,6 +24,10 @@ export type AdminProduct = {
   badge: "new" | "deal" | "bestseller" | null;
   imageUrl: string | null;
   swatch: [string, string];
+  blurb: string;
+  rating: number;
+  reviewCount: number;
+  soldCount: number;
   categoryName: string;
   categorySlug: string;
 };
@@ -51,6 +55,10 @@ type ProductRow = {
   badge: AdminProduct["badge"];
   image_url: string | null;
   swatch: string[] | null;
+  blurb: string | null;
+  rating: number | string;
+  review_count: number;
+  sold_count: number | null;
   category: { name: string; slug: string } | { name: string; slug: string }[] | null;
 };
 
@@ -69,13 +77,17 @@ function mapProduct(row: ProductRow): AdminProduct {
     badge: row.badge,
     imageUrl: row.image_url,
     swatch: [a, b],
+    blurb: row.blurb ?? "",
+    rating: Number(row.rating),
+    reviewCount: row.review_count,
+    soldCount: row.sold_count ?? 0,
     categoryName: category?.name ?? "—",
     categorySlug: category?.slug ?? "",
   };
 }
 
 const PRODUCT_COLUMNS =
-  "id, slug, name, price, old_price, stock, is_active, sort_order, badge, image_url, swatch, category:categories(name, slug)";
+  "id, slug, name, price, old_price, stock, is_active, sort_order, badge, image_url, swatch, blurb, rating, review_count, sold_count, category:categories(name, slug)";
 
 export type ProductFilters = {
   q?: string;
