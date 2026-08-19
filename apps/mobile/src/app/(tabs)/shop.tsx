@@ -53,6 +53,11 @@ export default function ShopScreen() {
           numColumns={2}
           columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
           contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
+          // Defaults to true on Android (RN's FlatList.js), which detaches
+          // scrolled-past cells from the native view tree and leaves blank
+          // bands when they fail to re-attach. These cells are tall and
+          // image-heavy, so it happens readily here.
+          removeClippedSubviews={false}
           renderItem={({ item }) => (
             <View className="flex-1">
               <ProductCard product={item} />
