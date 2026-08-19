@@ -10,13 +10,18 @@ import { supabase } from "./supabase";
  * single cached products query.
  */
 
-const HOUR = 1000 * 60 * 60;
+// Five minutes, not an hour. Prices and stock are now edited from the web
+// admin, and the phone has no way to be told: server-side updateTag reaches
+// the Next cache, nothing reaches a device. Five minutes plus the
+// refetch-on-foreground in _layout.tsx keeps a device close to the truth
+// without hammering the API on every screen change.
+const CATALOGUE_STALE_MS = 1000 * 60 * 5;
 
 export function useCategories() {
   return useQuery({
     queryKey: ["categories"],
     queryFn: () => fetchCategories(supabase),
-    staleTime: HOUR,
+    staleTime: CATALOGUE_STALE_MS,
   });
 }
 
@@ -24,7 +29,7 @@ export function useProducts() {
   return useQuery({
     queryKey: ["products"],
     queryFn: () => fetchProducts(supabase),
-    staleTime: HOUR,
+    staleTime: CATALOGUE_STALE_MS,
   });
 }
 

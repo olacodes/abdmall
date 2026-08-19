@@ -17,7 +17,15 @@ const MAX_BYTES = 5 * 1024 * 1024;
  * snapshots image_url at purchase time, so deleting it would blank the picture
  * on past orders.
  */
-export function ImageField({ initialUrl }: { initialUrl: string | null }) {
+export function ImageField({
+  initialUrl,
+  label = "Photo",
+  emptyHint = "No photo — the swatch gradient shows instead",
+}: {
+  initialUrl: string | null;
+  label?: string;
+  emptyHint?: string;
+}) {
   const [url, setUrl] = useState(initialUrl);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +70,7 @@ export function ImageField({ initialUrl }: { initialUrl: string | null }) {
   return (
     <div className="space-y-2">
       <span className="block text-xs font-semibold uppercase tracking-wide text-muted">
-        Photo
+        {label}
       </span>
       <input type="hidden" name="image_url" value={url ?? ""} />
 
@@ -79,7 +87,7 @@ export function ImageField({ initialUrl }: { initialUrl: string | null }) {
             />
           ) : (
             <span className="px-2 text-center text-xs text-faint">
-              No photo — the swatch gradient shows instead
+              {emptyHint}
             </span>
           )}
         </div>

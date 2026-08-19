@@ -1,13 +1,18 @@
 import "../global.css";
 
 import { useEffect } from "react";
+import { AppState, type AppStateStatus } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  focusManager,
+} from "@tanstack/react-query";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
@@ -21,7 +26,24 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+/**
+ * TanStack Query's focus tracking is built for the web's window focus event,
+ * which never fires in React Native. Wiring it to AppState means reopening the
+ * app refetches anything stale — the only way a price edited in the web admin
+ * reaches a phone promptly, since no server-side invalidation can reach here.
+ */
+function useRefetchOnForeground() {
+  useEffect(() => {
+    const onChange = (status: AppStateStatus) =>
+      focusManager.setFocused(status === "active");
+    const subscription = AppState.addEventListener("change", onChange);
+    return () => subscription.remove();
+  }, []);
+}
+
 export default function RootLayout() {
+  useRefetchOnForeground();
+
   // Keys must match the fontFamily names in tailwind.config.js.
   const [loaded] = useFonts({
     Fraunces: Fraunces_600SemiBold,
