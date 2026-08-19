@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -47,6 +47,9 @@ export default function Checkout() {
   const reference = useRef<string | null>(null);
   const paid = useRef<{ reference: string; total: number } | null>(null);
 
+  // Web only: whether the Paystack tab has been opened (see the paying stage).
+  const [payTabOpen, setPayTabOpen] = useState(false);
+
   const set = (k: keyof typeof form) => (v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -72,6 +75,7 @@ export default function Checkout() {
 
   const handleReturn = async () => {
     setAuthUrl(null);
+    setPayTabOpen(false);
     setStage("confirming");
     const res = await confirmCheckout(reference.current!);
     if ("error" in res) {
@@ -87,6 +91,23 @@ export default function Checkout() {
     if (nav.url?.startsWith(CHECKOUT_CALLBACK_URL)) void handleReturn();
   };
 
+  // Web has no WebView, so payment happens in a second tab and nothing tells us
+  // when it finishes. Poll the verify endpoint — it's idempotent and refuses
+  // anything unpaid — so coming back to this tab just works.
+  useEffect(() => {
+    if (Platform.OS !== "web" || stage !== "paying" || !payTabOpen) return;
+    const timer = setInterval(async () => {
+      const ref = reference.current;
+      if (!ref) return;
+      const res = await confirmCheckout(ref);
+      if (!("error" in res)) {
+        clear();
+        setStage("success");
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [stage, payTabOpen, clear]);
+
   // --- Paystack WebView -------------------------------------------------------
   if (stage === "paying" && authUrl) {
     return (
@@ -95,6 +116,7 @@ export default function Checkout() {
           <Pressable
             onPress={() => {
               setAuthUrl(null);
+              setPayTabOpen(false);
               setStage("form");
             }}
             hitSlop={12}
@@ -107,18 +129,59 @@ export default function Checkout() {
             Secure payment · Paystack
           </Text>
         </View>
-        <WebView
-          source={{ uri: authUrl }}
-          onNavigationStateChange={onNav}
-          onShouldStartLoadWithRequest={(r) => {
-            if (r.url.startsWith(CHECKOUT_CALLBACK_URL)) {
-              void handleReturn();
-              return false;
-            }
-            return true;
-          }}
-          startInLoadingState
-        />
+        {Platform.OS === "web" ? (
+          <View className="flex-1 items-center justify-center gap-4 p-8">
+            <View className="h-16 w-16 items-center justify-center rounded-2xl bg-gold-soft">
+              <Ionicons name="card-outline" size={28} color="#7a5a16" />
+            </View>
+            <Text className="text-center font-display text-xl text-ink">
+              Pay {formatNaira(total)}
+            </Text>
+            <Text className="text-center font-sans text-sm text-muted">
+              In the browser, Paystack opens in its own tab. Come back here when
+              you&rsquo;re done — we&rsquo;ll verify the payment automatically.
+            </Text>
+            <Pressable
+              onPress={() => {
+                setPayTabOpen(true);
+                window.open(authUrl, "_blank", "noopener");
+              }}
+              className="mt-2 rounded-full bg-gold px-8 py-4"
+            >
+              <Text className="font-sans-bold text-sm text-brand">
+                {payTabOpen ? "Reopen Paystack" : "Continue to Paystack"}
+              </Text>
+            </Pressable>
+            {payTabOpen ? (
+              <>
+                <View className="mt-2 flex-row items-center gap-2">
+                  <ActivityIndicator color="#b8860b" />
+                  <Text className="font-sans text-sm text-muted">
+                    Waiting for payment…
+                  </Text>
+                </View>
+                <Pressable onPress={() => void handleReturn()} hitSlop={8}>
+                  <Text className="font-sans-medium text-sm text-gold-deep underline">
+                    I&rsquo;ve completed payment
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
+          </View>
+        ) : (
+          <WebView
+            source={{ uri: authUrl }}
+            onNavigationStateChange={onNav}
+            onShouldStartLoadWithRequest={(r) => {
+              if (r.url.startsWith(CHECKOUT_CALLBACK_URL)) {
+                void handleReturn();
+                return false;
+              }
+              return true;
+            }}
+            startInLoadingState
+          />
+        )}
       </SafeAreaView>
     );
   }
