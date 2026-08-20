@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.checkout-confirm]
 verify_jwt = false
+
+# Paystack authenticates with an x-paystack-signature HMAC, not a Supabase JWT,
+# so this must accept unauthenticated requests. The signature is checked inside
+# before anything is read from the payload.
+[functions.paystack-webhook]
+verify_jwt = false
