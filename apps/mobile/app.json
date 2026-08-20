@@ -47,6 +47,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9b90c069-40f1-4999-b33f-1699922471fd"
+      }
+    },
+    "owner": "osmani-technologies-limited"
   }
 }
