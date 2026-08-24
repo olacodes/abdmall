@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { CartGlyph, Search, User, Whatsapp, Truck, Flame } from "@/components/icons";
+import {
+  CartGlyph,
+  Search,
+  User,
+  Whatsapp,
+  Truck,
+  Flame,
+  Shield,
+} from "@/components/icons";
 import { useCart } from "@/lib/cart-context";
 import { useUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/format";
@@ -55,7 +63,7 @@ function SearchForm() {
 
 export function SiteHeader({ categories }: { categories: Category[] }) {
   const { count, subtotal } = useCart();
-  const { user } = useUser();
+  const { user, isAdmin } = useUser();
 
   return (
     <header className="sticky top-0 z-50">
@@ -70,6 +78,17 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
             </span>
           </p>
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            {/* Only ever rendered for admins, so shoppers never learn the
+                route exists — same reason /admin 404s rather than 403s. */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1 rounded-full bg-brand px-2.5 py-0.5 font-bold text-white transition-opacity hover:opacity-85"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Store admin
+              </Link>
+            )}
             <Link href="/account" className="hover:underline">
               Track order
             </Link>

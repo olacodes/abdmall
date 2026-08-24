@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { StorefrontOnly } from "@/components/storefront-only";
 import { CartProvider } from "@/lib/cart-context";
+import { AuthProvider } from "@/lib/auth";
 import { getCategories } from "@/lib/catalogue";
 
 const fraunces = Fraunces({
@@ -64,15 +65,17 @@ export default async function RootLayout({
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <CartProvider>
-          <SiteHeader categories={categories} />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <StorefrontOnly>
-            <SiteFooter categories={categories} />
-          </StorefrontOnly>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <SiteHeader categories={categories} />
+            <main id="main" className="flex-1">
+              {children}
+            </main>
+            <StorefrontOnly>
+              <SiteFooter categories={categories} />
+            </StorefrontOnly>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
