@@ -137,6 +137,16 @@ Signed-out visitors to `/admin` get a 307 to sign-in; signed-in non-admins get a
 404. Authorization is enforced by RLS, not page code — admin pages use the
 caller's own session, so a bug in a page still can't write.
 
+Until 24 Aug any signed-in shopper could grant themselves that flag: Supabase's
+default grants gave `authenticated` UPDATE on every column of `profiles`, and
+the update policy only checked which *row* you could write, not which columns.
+Confirmed against the live database with a throwaway user, then closed by
+migration `20260824000000_lock_profile_privileges.sql`, which replaces the
+blanket grant with `update (full_name, phone)`. Re-tested after: the escalation
+fails with `42501 permission denied for table profiles` and ordinary profile
+edits still work. **Adding a user-editable column to `profiles` now means adding
+it to that grant.**
+
 ### 🟡 Someone has to watch `/admin/orders`
 
 Nothing notifies you of a new order. Until that exists, fulfilment depends on a
