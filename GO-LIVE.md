@@ -146,30 +146,24 @@ person opening the dashboard.
 
 ## 5. Deployment and security
 
-### 🟠 Merging to `main` does not deploy
+### ✅ Pushing to `main` now deploys
 
-Every production release so far has been a manual `vercel --prod`. PR #6 merged
-on 5 Aug and production sat unchanged for six days as a result. Connect Git
-auto-deploys in the Vercel project settings, or make the manual step part of
-your release routine.
+This used to be manual — PR #6 merged on 5 Aug and production sat unchanged for
+six days as a result. Git auto-deploy is connected now: the push of `91c0226` on
+24 Aug started a production build 11 seconds later, straight from that commit
+(`Cloning github.com/olacodes/abdmall (Branch: main, Commit: 91c0226)`).
+
+Treat `main` as production from here on.
+
+> `vercel --prod` from the CLI currently fails during upload with a 500 from
+> `api.vercel.com/v2/files`, and the upload is 545 MB — worth a look if you ever
+> need the manual path back. The installed CLI is 50.39.0 against 59.5.0 latest.
 
 ### 🟠 44 Dependabot alerts on `main`
 
 1 critical, 20 high, 19 moderate, 4 low — GitHub reports them on every push.
 Work through them before an app-store reviewer or a customer does.
 <https://github.com/olacodes/abdmall/security/dependabot>
-
-### 🟡 Redeploy `checkout-start` when you next deploy the web app
-
-It now returns the priced lines it recorded, so the web receipt shows what was
-charged rather than what the browser's cart was holding:
-
-```
-supabase functions deploy checkout-start
-```
-
-Order doesn't matter — a web build talking to the older function falls back to
-the cart lines, and the mobile app ignores the new field.
 
 ### 🟡 `SUPABASE_SERVICE_ROLE_KEY` is now unused on Vercel
 
@@ -212,6 +206,7 @@ Not configuration, but each removes a class of go-live problem.
 | --- | --- |
 | Edge Functions `checkout-start` / `checkout-confirm` deployed, `verify_jwt = false` | 19 Aug |
 | Web checkout moved onto those functions — one money path, one Paystack key | 24 Aug |
+| `checkout-start` v3 deployed, returning the lines it priced; live on production web | 24 Aug |
 | `paystack-webhook` deployed and tested end to end | 20 Aug |
 | `PAYSTACK_SECRET_KEY` set in Supabase — **test key** | 19 Aug |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |
