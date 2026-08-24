@@ -128,6 +128,14 @@ Deno.serve(async (req) => {
       subtotal,
       delivery,
       total,
+      // The lines exactly as priced above, so a client's receipt screen shows
+      // what was charged rather than what its cart happened to be holding.
+      items: items.map((i) => ({
+        name: i.name,
+        qty: i.quantity,
+        price: i.price,
+        size: i.size ?? undefined,
+      })),
     });
   } catch (e) {
     return json(

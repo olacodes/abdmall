@@ -3,7 +3,7 @@
 Everything that has to be **set, registered or configured** before abdmall takes
 real orders. Code is not the blocker — most of what's left lives in a dashboard.
 
-Status as of **20 Aug 2026**. Verified items say how they were verified; items
+Status as of **24 Aug 2026**. Verified items say how they were verified; items
 marked *verify* are ones only you can see.
 
 Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon after
@@ -14,20 +14,14 @@ Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon afte
 
 ### 🔴 Swap the Paystack test key for a live one
 
-Today's key is `sk_test_…`, so no money can move. It lives in **two** places and
-both need the live key:
+Today's key is `sk_test_…`, so no money can move. It now lives in exactly **one**
+place, since web, mobile and the webhook all go through the Edge Functions:
 
-| Where | How | Used by |
-| --- | --- | --- |
-| Supabase secret | `supabase secrets set PAYSTACK_SECRET_KEY=sk_live_…` | mobile + the webhook |
-| Vercel env var | `vercel env add PAYSTACK_SECRET_KEY production` | web checkout |
+```
+supabase secrets set PAYSTACK_SECRET_KEY=sk_live_…
+```
 
-No redeploy needed for the Supabase side — secrets are read per request. Vercel
-**does** need a redeploy to pick up a new env var.
-
-> The Vercel one has **never been set**, so web checkout cannot take payment at
-> all right now. Mobile can, because it goes through the Edge Functions.
-> See §6 for the change that removes this duplication entirely.
+No redeploy needed — secrets are read per request.
 
 ### 🔴 Register the webhook in the Paystack dashboard
 
@@ -165,6 +159,25 @@ your release routine.
 Work through them before an app-store reviewer or a customer does.
 <https://github.com/olacodes/abdmall/security/dependabot>
 
+### 🟡 Redeploy `checkout-start` when you next deploy the web app
+
+It now returns the priced lines it recorded, so the web receipt shows what was
+charged rather than what the browser's cart was holding:
+
+```
+supabase functions deploy checkout-start
+```
+
+Order doesn't matter — a web build talking to the older function falls back to
+the cart lines, and the mobile app ignores the new field.
+
+### 🟡 `SUPABASE_SERVICE_ROLE_KEY` is now unused on Vercel
+
+The web app no longer holds a service-role client; privileged order writes
+happen only inside the Edge Functions. The Vercel variable can be removed
+(`vercel env rm SUPABASE_SERVICE_ROLE_KEY production`). Keep it in your local
+`.env.local` — `apps/web/scripts/upload-product-images.mts` still needs it.
+
 ### 🟡 Stale git remote
 
 `origin` still points at `olacodes/abdmall-web.git`; GitHub redirects to
@@ -180,11 +193,6 @@ git remote set-url origin https://github.com/olacodes/abdmall.git
 
 Not configuration, but each removes a class of go-live problem.
 
-- **🟠 Point the web checkout at the shared Edge Functions.** Web currently has
-  its own `startCheckout`/`confirmCheckout` server actions that duplicate the
-  amount recomputation and Paystack calls the Edge Functions already do. Doing
-  this leaves **one** money path, **one** place for the Paystack key, and
-  removes the Vercel env var in §1 entirely.
 - **🟠 `apps/mobile/src/app/checkout.tsx:160,163` read `paid.current` during
   render** — five lint errors and a genuine React violation with the compiler
   enabled. The success screen can fail to update after payment.
@@ -203,6 +211,7 @@ Not configuration, but each removes a class of go-live problem.
 | | Done |
 | --- | --- |
 | Edge Functions `checkout-start` / `checkout-confirm` deployed, `verify_jwt = false` | 19 Aug |
+| Web checkout moved onto those functions — one money path, one Paystack key | 24 Aug |
 | `paystack-webhook` deployed and tested end to end | 20 Aug |
 | `PAYSTACK_SECRET_KEY` set in Supabase — **test key** | 19 Aug |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { formatNaira } from "@/lib/format";
-import { saveLastOrder } from "@/lib/order";
+import { saveLastOrder, type Order } from "@/lib/order";
 import { startCheckout } from "./actions";
 import { ButtonLink } from "@/components/ui/button";
 import {
@@ -79,9 +79,7 @@ export default function CheckoutPage() {
     setProcessing(true);
     setError(null);
 
-    // The server recomputes every amount from the database — we only send the
-    // cart lines (slug/size/qty) and the delivery details.
-    const res = await startCheckout({
+    const details = {
       email: String(form.get("email") ?? ""),
       name: String(form.get("name") ?? ""),
       phone: String(form.get("phone") ?? ""),
@@ -89,6 +87,12 @@ export default function CheckoutPage() {
       city: String(form.get("city") ?? ""),
       state: String(form.get("state") ?? ""),
       method,
+    };
+
+    // The server recomputes every amount from the database — we only send the
+    // cart lines (slug/size/qty) and the delivery details.
+    const res = await startCheckout({
+      ...details,
       lines: items.map((i) => ({ slug: i.slug, size: i.size, qty: i.qty })),
     });
 
@@ -98,9 +102,29 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Stash the server-computed order for the success screen, then hand off to
-    // Paystack. The cart is cleared on success (after payment is verified).
-    saveLastOrder(res.order);
+    // Receipt for the success screen: server reference and server totals, with
+    // the lines the server priced. Older deployments of checkout-start don't
+    // return them — then show the cart we just displayed instead.
+    const order: Order = {
+      ...details,
+      ref: res.reference,
+      createdAt: new Date().toISOString(),
+      items:
+        res.items ??
+        items.map((i) => ({
+          name: i.name,
+          qty: i.qty,
+          price: i.price,
+          size: i.size,
+        })),
+      subtotal: res.subtotal,
+      delivery: res.delivery,
+      total: res.total,
+    };
+
+    // Stash it, then hand off to Paystack. The cart is cleared on the success
+    // screen — after the payment has been verified.
+    saveLastOrder(order);
     window.location.href = res.authorizationUrl;
   };
 
