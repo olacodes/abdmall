@@ -5,7 +5,7 @@ import type { Category, Product } from "@/lib/mock-data";
 import { ProductCard } from "@/components/ui/product-card";
 import { Filter, Close } from "@/components/icons";
 import { useSearchSink } from "@/lib/search-bridge";
-import { buildEntry, scoreEntry, tokenize } from "@/lib/product-search";
+import { buildFields, scoreFields, tokenize } from "@/lib/product-search";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "rating" | "newest";
 
@@ -84,10 +84,20 @@ export function CatalogueView({
   // input stays responsive if the catalogue grows.
   const deferredQuery = useDeferredValue(query);
 
-  // Normalizing every product on every keystroke would be the one genuinely
-  // wasteful part — do it once for the catalogue instead.
+  // Shoppers search names first, but "soap" landing on a beauty item via its
+  // category or blurb is still a useful result — just a weaker one.
   const entries = useMemo(
-    () => new Map(products.map((p) => [p.id, buildEntry(p)])),
+    () =>
+      new Map(
+        products.map((p) => [
+          p.id,
+          buildFields([
+            { text: p.name, weight: 3 },
+            { text: p.category, weight: 1 },
+            { text: p.blurb, weight: 0.5 },
+          ]),
+        ]),
+      ),
     [products],
   );
 
@@ -101,7 +111,7 @@ export function CatalogueView({
       if (selectedCats.length > 0 && !selectedCats.includes(p.category)) continue;
 
       const score = tokens.length
-        ? scoreEntry(entries.get(p.id) ?? buildEntry(p), tokens)
+        ? scoreFields(entries.get(p.id) ?? [], tokens)
         : 1;
       if (score === 0) continue;
       scored.push({ product: p, score });

@@ -28,51 +28,46 @@ export function tokenize(query: string): string[] {
   return normalized ? normalized.split(" ") : [];
 }
 
-export type SearchFields = { name: string; blurb: string; category: string };
+/** A normalized piece of text to search, and how much a hit in it counts. */
+export type SearchField = { text: string; weight: number };
 
-export type SearchEntry = {
-  name: string;
-  blurb: string;
-  category: string;
-};
-
-/** Normalizing every product on every keystroke would be wasteful — callers
- *  build this once per catalogue and reuse it. */
-export function buildEntry(fields: SearchFields): SearchEntry {
-  return {
-    name: normalize(fields.name),
-    blurb: normalize(fields.blurb),
-    category: normalize(fields.category),
-  };
+/** Normalizing on every keystroke would be the one genuinely wasteful part —
+ *  callers build these once per list and reuse them. */
+export function buildFields(parts: SearchField[]): SearchField[] {
+  return parts.map((part) => ({
+    text: normalize(part.text),
+    weight: part.weight,
+  }));
 }
 
 /**
- * How well one word matches one product. Zero means it doesn't.
- *
- * The ordering is what makes results feel right: a name that starts with what
- * you typed beats one where it appears mid-word, and anything in the name
- * beats a passing mention in the description.
+ * How squarely one word sits in one field. The tiers are what make results
+ * feel right: text that starts with what you typed beats text where it appears
+ * mid-word, which beats a match buried inside a longer word.
  */
-function tokenScore(entry: SearchEntry, token: string): number {
-  if (entry.name.startsWith(token)) return 6;
-  if (` ${entry.name}`.includes(` ${token}`)) return 4; // starts a later word
-  if (entry.name.includes(token)) return 3;
-  if (entry.category.includes(token)) return 2;
-  if (entry.blurb.includes(token)) return 1;
+function fieldTier(text: string, token: string): number {
+  if (text.startsWith(token)) return 3;
+  if (` ${text}`.includes(` ${token}`)) return 2; // starts a later word
+  if (text.includes(token)) return 1;
   return 0;
 }
 
 /**
- * Relevance of a product for the whole query, or 0 if it isn't a match.
- * Every token must land somewhere — that's what makes multi-word queries
- * narrow the results instead of widening them.
+ * Relevance across all fields, or 0 if this isn't a match at all.
+ *
+ * Every token must land somewhere — that's what makes a multi-word query
+ * narrow the results rather than widen them. Each token scores from its best
+ * field, so a name hit always outranks the same word in a description.
  */
-export function scoreEntry(entry: SearchEntry, tokens: string[]): number {
+export function scoreFields(fields: SearchField[], tokens: string[]): number {
   let total = 0;
   for (const token of tokens) {
-    const score = tokenScore(entry, token);
-    if (score === 0) return 0;
-    total += score;
+    let best = 0;
+    for (const field of fields) {
+      best = Math.max(best, fieldTier(field.text, token) * field.weight);
+    }
+    if (best === 0) return 0;
+    total += best;
   }
   return total;
 }
