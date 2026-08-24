@@ -123,15 +123,25 @@ builds instead of Expo Go, that reason disappears — revisit then.
 
 ## 4. Admin access
 
-### 🟠 Admin rights are database state, not code
+### ✅ Granting admin access
 
-There is no UI for granting them. To make someone an admin:
+Use **`/admin/team`** — enter the email of someone who already has an abdmall
+account and they become an admin immediately (the flag is checked per request,
+so nobody signs out and back in). The page also shows who granted each admin
+and when.
+
+The rules live in the `set_admin` database function, not the page, so they hold
+however it's called: only an admin may grant, the email must belong to an
+existing account, you can't remove your own access, and the last admin can't be
+removed at all.
+
+Currently exactly one admin: **olatundesodiq@gmail.com**. The SQL fallback still
+works if you ever lock yourself out of the UI:
 
 ```sql
-update public.profiles set is_admin = true where id = '<auth user id>';
+update public.profiles p set is_admin = true
+from auth.users u where u.id = p.id and u.email = 'them@example.com';
 ```
-
-Currently exactly one admin: **olatundesodiq@gmail.com**.
 
 Signed-out visitors to `/admin` get a 307 to sign-in; signed-in non-admins get a
 404. Authorization is enforced by RLS, not page code — admin pages use the
