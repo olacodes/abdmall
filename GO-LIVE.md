@@ -90,6 +90,12 @@ Supabase's built-in mailer is rate-limited and intended for development. Sign-up
 confirmation is **on**, so a customer who can't receive the email can't create
 an account. Configure custom SMTP before launch.
 
+Nothing in the codebase sends email of its own — checked. So the success screen's
+"a receipt is on its way to your email" is currently untrue, and an admin invitee
+still depends on the built-in mailer to confirm their sign-up. One SMTP provider
+(Resend's free tier covers this volume) fixes confirmations, receipts and invites
+together. The blocker is domain DNS: SPF/DKIM/DMARC on the bought domain.
+
 ---
 
 ## 3. Mobile release
@@ -125,10 +131,19 @@ builds instead of Expo Go, that reason disappears — revisit then.
 
 ### ✅ Granting admin access
 
-Use **`/admin/team`** — enter the email of someone who already has an abdmall
-account and they become an admin immediately (the flag is checked per request,
-so nobody signs out and back in). The page also shows who granted each admin
-and when.
+Use **`/admin/team`** — enter an email. If they already have an abdmall account
+they become an admin immediately (the flag is checked per request, so nobody
+signs out and back in). If they don't, you get an **invite link** to send them
+however you like; they sign up with that address, open the link, and accept.
+
+**No email is sent** — deliberately, since no sending domain is configured yet.
+Pass the link on by WhatsApp for now. When email is set up, nothing here has to
+change: delivery was never part of the security model. The link is valid 14
+days, usable once, and only by the address it was issued to, so a forwarded or
+mistyped invite grants nothing. Outstanding invites are listed on the page with
+a Revoke button, and re-inviting the same address kills the previous link.
+
+The page also shows who granted each admin and when.
 
 The rules live in the `set_admin` database function, not the page, so they hold
 however it's called: only an admin may grant, the email must belong to an

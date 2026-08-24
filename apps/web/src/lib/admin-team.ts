@@ -26,6 +26,43 @@ type TeamRow = {
   created_at: string;
 };
 
+export type PendingInvite = {
+  id: string;
+  email: string;
+  token: string;
+  invitedByEmail: string | null;
+  createdAt: string;
+  expiresAt: string;
+  expired: boolean;
+};
+
+type InviteRow = {
+  id: string;
+  email: string;
+  token: string;
+  invited_by_email: string | null;
+  created_at: string;
+  expires_at: string;
+  expired: boolean;
+};
+
+export async function listInvites(): Promise<PendingInvite[]> {
+  const { supabase } = await requireAdmin();
+
+  const { data, error } = await supabase.rpc("list_admin_invites");
+  if (error) throw new Error(error.message);
+
+  return ((data ?? []) as InviteRow[]).map((row) => ({
+    id: row.id,
+    email: row.email,
+    token: row.token,
+    invitedByEmail: row.invited_by_email,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    expired: row.expired,
+  }));
+}
+
 export async function listAdmins(): Promise<TeamMember[]> {
   const { supabase } = await requireAdmin();
 
