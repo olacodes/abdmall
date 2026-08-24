@@ -14,6 +14,7 @@ import {
 } from "@/components/icons";
 import { useCart } from "@/lib/cart-context";
 import { useUser } from "@/lib/auth";
+import { useSearchSink } from "@/lib/search-bridge";
 import { formatNaira } from "@/lib/format";
 import type { Category } from "@/lib/mock-data";
 
@@ -33,9 +34,25 @@ function Wordmark() {
 function SearchForm() {
   const router = useRouter();
   const [q, setQ] = useState("");
+  // Lets a catalogue on the current page put text back in the box — landing on
+  // /shop?q=rice should show "rice" here, not an empty field.
+  const bridge = useSearchSink("input", setQ);
+
+  const onChange = (value: string) => {
+    setQ(value);
+    // Filters in place when the page is showing products; otherwise nothing is
+    // listening and the search only happens on submit, as before.
+    bridge?.sendToResults(value);
+  };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (bridge?.hasResults()) {
+      // Already filtering as they typed. Dropping focus dismisses the phone
+      // keyboard so they can see what they searched for.
+      (e.target as HTMLFormElement).querySelector("input")?.blur();
+      return;
+    }
     router.push(q.trim() ? `/shop?q=${encodeURIComponent(q.trim())}` : "/shop");
   };
 
@@ -43,7 +60,7 @@ function SearchForm() {
     <form onSubmit={onSubmit} className="flex w-full items-center">
       <input
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         type="search"
         aria-label="Search products"
         placeholder="Search for phones, ankara, rice, generators…"

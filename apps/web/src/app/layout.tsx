@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { StorefrontOnly } from "@/components/storefront-only";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth";
+import { SearchBridgeProvider } from "@/lib/search-bridge";
 import { getCategories } from "@/lib/catalogue";
 
 const fraunces = Fraunces({
@@ -67,13 +68,15 @@ export default async function RootLayout({
         </a>
         <AuthProvider>
           <CartProvider>
-            <SiteHeader categories={categories} />
-            <main id="main" className="flex-1">
-              {children}
-            </main>
-            <StorefrontOnly>
-              <SiteFooter categories={categories} />
-            </StorefrontOnly>
+            <SearchBridgeProvider>
+              <SiteHeader categories={categories} />
+              <main id="main" className="flex-1">
+                {children}
+              </main>
+              <StorefrontOnly>
+                <SiteFooter categories={categories} />
+              </StorefrontOnly>
+            </SearchBridgeProvider>
           </CartProvider>
         </AuthProvider>
       </body>

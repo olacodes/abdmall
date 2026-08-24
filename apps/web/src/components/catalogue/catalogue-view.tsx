@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { Category, Product } from "@/lib/mock-data";
 import { ProductCard } from "@/components/ui/product-card";
 import { Filter, Close } from "@/components/icons";
+import { useSearchSink } from "@/lib/search-bridge";
+import { buildEntry, scoreEntry, tokenize } from "@/lib/product-search";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "rating" | "newest";
 
@@ -51,55 +53,98 @@ export function CatalogueView({
   const [sort, setSort] = useState<SortKey>(initialSort);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // The header's search box types straight into this list.
+  const bridge = useSearchSink("results", setQuery);
+
+  // Arriving on /shop?q=rice from a link or a bookmark: show the term in the
+  // header box too, so it can be edited rather than retyped.
+  useEffect(() => {
+    if (initialQuery) bridge?.sendToInput(initialQuery);
+  }, [initialQuery, bridge]);
+
+  const setSearch = (value: string) => {
+    setQuery(value);
+    bridge?.sendToInput(value);
+  };
+
   const toggleCat = (slug: string) =>
     setSelectedCats((prev) =>
       prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug],
     );
 
   const clearAll = () => {
-    setQuery("");
+    setSearch("");
     setSelectedCats(initialCategory ? [initialCategory] : []);
     setBracket("all");
     setSort("featured");
   };
 
+  // Keeps the grid from blocking the keystroke that caused it. At this
+  // catalogue size it never actually lags, but it costs nothing and means the
+  // input stays responsive if the catalogue grows.
+  const deferredQuery = useDeferredValue(query);
+
+  // Normalizing every product on every keystroke would be the one genuinely
+  // wasteful part — do it once for the catalogue instead.
+  const entries = useMemo(
+    () => new Map(products.map((p) => [p.id, buildEntry(p)])),
+    [products],
+  );
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const tokens = tokenize(deferredQuery);
     const pb = priceBrackets.find((b) => b.key === bracket)!;
 
-    const list = products.filter((p) => {
-      const matchesQuery =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.blurb.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q);
-      const matchesCat =
-        selectedCats.length === 0 || selectedCats.includes(p.category);
-      const matchesPrice = pb.test(p.price);
-      return matchesQuery && matchesCat && matchesPrice;
-    });
+    const scored: { product: Product; score: number }[] = [];
+    for (const p of products) {
+      if (!pb.test(p.price)) continue;
+      if (selectedCats.length > 0 && !selectedCats.includes(p.category)) continue;
 
-    const sorted = [...list];
+      const score = tokens.length
+        ? scoreEntry(entries.get(p.id) ?? buildEntry(p), tokens)
+        : 1;
+      if (score === 0) continue;
+      scored.push({ product: p, score });
+    }
+
     switch (sort) {
       case "price-asc":
-        sorted.sort((a, b) => a.price - b.price);
+        scored.sort((a, b) => a.product.price - b.product.price);
         break;
       case "price-desc":
-        sorted.sort((a, b) => b.price - a.price);
+        scored.sort((a, b) => b.product.price - a.product.price);
         break;
       case "rating":
-        sorted.sort((a, b) => b.rating - a.rating);
+        scored.sort((a, b) => b.product.rating - a.product.rating);
         break;
       case "newest":
-        sorted.reverse();
+        scored.reverse();
         break;
+      default:
+        // "Featured" keeps the curated order — except while searching, where
+        // the best match belongs first and curation is beside the point.
+        if (tokens.length) scored.sort((a, b) => b.score - a.score);
     }
-    return sorted;
-  }, [products, query, selectedCats, bracket, sort]);
+    return scored.map((s) => s.product);
+  }, [products, entries, deferredQuery, selectedCats, bracket, sort]);
+
+  // Keep the address bar in step with what's on screen, so a search can be
+  // shared or reloaded. replaceState rather than router.replace: this is a
+  // dynamic route, and pushing a navigation per keystroke would both hit the
+  // server and bury the previous page under a history entry per character.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const trimmed = query.trim();
+    if (trimmed) url.searchParams.set("q", trimmed);
+    else url.searchParams.delete("q");
+    if (url.href !== window.location.href) {
+      window.history.replaceState(null, "", url);
+    }
+  }, [query]);
 
   // Pagination derived from a filter signature — resets to page 1 whenever the
   // filters change, without a reset effect.
-  const sig = `${query}|${selectedCats.join(",")}|${bracket}|${sort}`;
+  const sig = `${deferredQuery}|${selectedCats.join(",")}|${bracket}|${sort}`;
   const [pageState, setPageState] = useState({ sig, visible: PAGE_SIZE });
   const visible = pageState.sig === sig ? pageState.visible : PAGE_SIZE;
   const shown = filtered.slice(0, visible);
@@ -194,7 +239,7 @@ export function CatalogueView({
         <div className="mb-4 flex items-center gap-2 text-sm">
           <span className="text-muted">Results for</span>
           <button
-            onClick={() => setQuery("")}
+            onClick={() => setSearch("")}
             className="inline-flex items-center gap-2 rounded-full bg-gold-soft px-3 py-1 font-semibold text-gold-deep hover:bg-gold-soft/70"
           >
             “{query.trim()}”
@@ -205,9 +250,12 @@ export function CatalogueView({
 
       {/* toolbar */}
       <div className="mb-5 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">
+        {/* Announced, because a sighted shopper watches the grid change while
+            typing and a screen reader user would otherwise get nothing. */}
+        <p className="text-sm text-muted" role="status" aria-live="polite">
           <span className="font-semibold text-ink">{filtered.length}</span>{" "}
           {filtered.length === 1 ? "product" : "products"}
+          {deferredQuery.trim() ? ` for “${deferredQuery.trim()}”` : ""}
         </p>
 
         <div className="flex items-center gap-3">
