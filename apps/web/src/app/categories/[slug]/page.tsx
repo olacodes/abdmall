@@ -48,6 +48,7 @@ export default async function CategoryPage({
         categories={categories}
         initialCategory={slug}
         lockCategory
+        scopeLabel={category.name.toLowerCase()}
       />
     </>
   );

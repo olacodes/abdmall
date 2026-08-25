@@ -50,6 +50,7 @@ export default async function DealsPage() {
         products={byDiscount}
         categories={categories}
         initialSort="featured"
+        scopeLabel="today’s deals"
       />
     </>
   );

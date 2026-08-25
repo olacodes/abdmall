@@ -24,6 +24,7 @@ export default async function NewPage() {
         products={products}
         categories={categories}
         initialSort="newest"
+        scopeLabel="new arrivals"
       />
     </>
   );

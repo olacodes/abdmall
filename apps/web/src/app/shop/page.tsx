@@ -25,7 +25,14 @@ export default async function ShopPage({
         title="All Products"
         subtitle="Every product across fashion, tech, home, beauty and daily essentials."
       />
+      {/* Keyed on the search params so a header search lands on a fresh view.
+          Without this, arriving from /shop at /shop?q=rice reuses the mounted
+          component: initialQuery only seeds state, so the box and the grid
+          would both keep showing the previous search. Remounting also drops
+          any category or price refinement, which is what a new site-wide
+          search should do — otherwise it can return nothing and look broken. */}
       <CatalogueView
+        key={`${q ?? ""}|${category ?? ""}`}
         products={products}
         categories={categories}
         initialQuery={q ?? ""}

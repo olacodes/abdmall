@@ -3,8 +3,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { Category, Product } from "@/lib/mock-data";
 import { ProductCard } from "@/components/ui/product-card";
-import { Filter, Close } from "@/components/icons";
-import { useSearchSink } from "@/lib/search-bridge";
+import { Filter, Close, Search as SearchIcon } from "@/components/icons";
 import { buildFields, scoreFields, tokenize } from "@/lib/product-search";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "rating" | "newest";
@@ -37,6 +36,7 @@ export function CatalogueView({
   initialCategory,
   lockCategory = false,
   initialSort = "featured",
+  scopeLabel = "all products",
 }: {
   products: Product[];
   categories: Category[];
@@ -44,6 +44,10 @@ export function CatalogueView({
   initialCategory?: string;
   lockCategory?: boolean;
   initialSort?: SortKey;
+  /** What this page is showing, for the search box's placeholder. It searches
+   *  only these products, so it should say so — the header box is the one that
+   *  searches everything. */
+  scopeLabel?: string;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [selectedCats, setSelectedCats] = useState<string[]>(
@@ -53,27 +57,13 @@ export function CatalogueView({
   const [sort, setSort] = useState<SortKey>(initialSort);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // The header's search box types straight into this list.
-  const bridge = useSearchSink("results", setQuery);
-
-  // Arriving on /shop?q=rice from a link or a bookmark: show the term in the
-  // header box too, so it can be edited rather than retyped.
-  useEffect(() => {
-    if (initialQuery) bridge?.sendToInput(initialQuery);
-  }, [initialQuery, bridge]);
-
-  const setSearch = (value: string) => {
-    setQuery(value);
-    bridge?.sendToInput(value);
-  };
-
   const toggleCat = (slug: string) =>
     setSelectedCats((prev) =>
       prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug],
     );
 
   const clearAll = () => {
-    setSearch("");
+    setQuery("");
     setSelectedCats(initialCategory ? [initialCategory] : []);
     setBracket("all");
     setSort("featured");
@@ -244,31 +234,36 @@ export function CatalogueView({
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8">
-      {/* active search chip */}
-      {query.trim() && (
-        <div className="mb-4 flex items-center gap-2 text-sm">
-          <span className="text-muted">Results for</span>
-          <button
-            onClick={() => setSearch("")}
-            className="inline-flex items-center gap-2 rounded-full bg-gold-soft px-3 py-1 font-semibold text-gold-deep hover:bg-gold-soft/70"
-          >
-            “{query.trim()}”
-            <Close className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* toolbar */}
-      <div className="mb-5 flex items-center justify-between gap-3">
+      {/* toolbar — search sits with the other controls that narrow the list,
+          on its own row once the screen is too tight for all three. */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         {/* Announced, because a sighted shopper watches the grid change while
             typing and a screen reader user would otherwise get nothing. */}
-        <p className="text-sm text-muted" role="status" aria-live="polite">
+        <p
+          className="order-1 text-sm text-muted"
+          role="status"
+          aria-live="polite"
+        >
           <span className="font-semibold text-ink">{filtered.length}</span>{" "}
           {filtered.length === 1 ? "product" : "products"}
           {deferredQuery.trim() ? ` for “${deferredQuery.trim()}”` : ""}
         </p>
 
-        <div className="flex items-center gap-3">
+        <div className="order-3 w-full sm:order-2 sm:w-64 sm:flex-1 sm:max-w-xs">
+          <label className="relative block">
+            <span className="sr-only">Search {scopeLabel}</span>
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              type="search"
+              placeholder={`Search ${scopeLabel}`}
+              className="h-10 w-full rounded-full border border-line bg-surface pl-9 pr-4 text-sm text-ink placeholder:text-faint focus:border-gold focus:outline-none"
+            />
+          </label>
+        </div>
+
+        <div className="order-2 ml-auto flex items-center gap-3 sm:order-3 sm:ml-0">
           <button
             onClick={() => setMobileFiltersOpen(true)}
             className="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-medium text-ink lg:hidden"
