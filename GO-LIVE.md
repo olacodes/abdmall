@@ -3,7 +3,7 @@
 Everything that has to be **set, registered or configured** before abdmall takes
 real orders. Code is not the blocker — most of what's left lives in a dashboard.
 
-Status as of **24 Aug 2026**. Verified items say how they were verified; items
+Status as of **22 Oct 2026**. Verified items say how they were verified; items
 marked *verify* are ones only you can see.
 
 Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon after
@@ -12,18 +12,20 @@ Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon afte
 
 ## 1. Payments
 
-### 🔴 Swap the Paystack test key for a live one
+### ✅ Live Paystack key set
 
-Today's key is `sk_test_…`, so no money can move. It now lives in exactly **one**
-place, since web, mobile and the webhook all go through the Edge Functions:
+The key lives in exactly **one** place, since web, mobile and the webhook all go
+through the Edge Functions:
 
 ```
 supabase secrets set PAYSTACK_SECRET_KEY=sk_live_…
 ```
 
-No redeploy needed — secrets are read per request.
+Rotated 22 Oct 14:18 UTC — confirmed by the digest in `supabase secrets list`
+changing from `86e0a45a…` to `871e5e87…` (previous value dated 19 Aug). No
+redeploy needed; secrets are read per request.
 
-### 🔴 Register the webhook in the Paystack dashboard
+### ✅ Webhook registered — 🟠 but not yet proven end to end
 
 *Settings → API Keys & Webhooks → Webhook URL*
 
@@ -31,13 +33,39 @@ No redeploy needed — secrets are read per request.
 https://acmkyuwkfualxwlluwbs.supabase.co/functions/v1/paystack-webhook
 ```
 
-The function is deployed and tested but Paystack never calls it until this is
-set. Without it, a customer who pays and closes the tab has their money taken
-and their order stuck on `pending` forever.
+Registered 22 Oct. What has been verified from outside:
 
-**Set the webhook and the live key together.** The function verifies the
-signature using whatever `PAYSTACK_SECRET_KEY` Supabase holds, so a live-mode
-webhook checked against a test key fails with 401, and vice versa.
+| Probe | Result |
+| --- | --- |
+| `GET` | 405 — matches `index.ts:45` |
+| `POST`, no signature | 401 Invalid signature |
+| `POST`, bogus signature | 401 Invalid signature |
+
+A 401 rather than the 500 "Not configured" of `index.ts:50` proves the function
+can read `PAYSTACK_SECRET_KEY`. What that does **not** prove is that Paystack is
+actually calling the URL, or that the key is live-mode rather than another test
+key — neither is observable from here.
+
+**The outstanding test, and the trap in it.** A normal successful purchase does
+not test the webhook: `checkout-confirm` and `paystack-webhook` both call the
+same `confirmOrder()` (`_shared/confirm.ts:19`), so if you pay and wait for the
+redirect, the app confirms the order itself and it flips to `paid` **even with
+the webhook completely broken**. To exercise the webhook you have to deny the
+app its own confirm call — pay, then **close the tab the instant Paystack shows
+success**, before the redirect lands. If the order still reaches `paid`, only
+the webhook can have done it.
+
+Keep it cheap: the cheapest real product is ₦45,000 and delivery adds ₦1,500
+below the ₦100,000 free threshold (`checkout-start/index.ts:7-10`). Add a ₦100
+throwaway product in `/admin/products`, test with that, then unpublish it.
+
+Read the result in the Paystack dashboard's per-transaction webhook log:
+200 = working · 401 = key/webhook mode mismatch · no attempt = URL not set on
+the **live** side · 500 = real DB error, detail in the Supabase function logs
+(dashboard only; this CLI version has no `functions logs` subcommand).
+
+Confirm the transaction appears under **Live**, not Test — that doubles as the
+key-mode check.
 
 Paystack has separate test and live webhook URLs — fill in both if you want to
 keep testing after go-live.
@@ -45,42 +73,76 @@ keep testing after go-live.
 ### 🟡 Decide what happens to abandoned orders
 
 `checkout-start` writes the order row *before* contacting Paystack, so every
-abandoned checkout leaves a `pending` row behind. Two exist today
-(`ABD-ZTW7I5-8284`, `ABD-ZTIB69-2109`) and the admin dashboard counts any older
-than a day under "needs attention". Either sweep them on a schedule or treat
-them as a funnel record — but choose deliberately, because the count only grows.
+abandoned checkout leaves a `pending` row behind. **Three** exist as of 22 Oct
+(`ABD-1CHSZ1-6568`, `ABD-ZTW7I5-8284`, `ABD-ZTIB69-2109`) against 4 paid, and
+the admin dashboard counts any older than a day under "needs attention". Either
+sweep them on a schedule or treat them as a funnel record — but choose
+deliberately, because the count only grows.
 
 ---
 
 ## 2. Domain and URLs
 
-### 🟠 `abdmall.com` does not exist
+### ✅ `abdmall.com` is live — 22 Oct 2026
 
-Checked: it doesn't resolve, and it isn't among the three domains on the Vercel
-account (`sodiqolatunde.com`, `osmani.com.ng`, `chattosales.com`). The site is
-only reachable at `abdmall.vercel.app`.
+Registered at Namecheap, DNS pointed at Vercel, serving over HTTPS:
 
-Two places assume the domain:
+```
+abdmall.com      A      216.198.79.1          HTTP 200
+www.abdmall.com  CNAME  cname.vercel-dns.com  HTTP 200
+```
 
-- `apps/web/src/app/layout.tsx:37` — `metadataBase: new URL("https://abdmall.com")`.
-  Every Open Graph image URL is resolved against this, so **social link previews
-  are broken** until the domain exists. Point it at `abdmall.vercel.app` or buy
-  the domain.
-- `apps/web/src/components/site-footer.tsx:131` — copyright line, cosmetic.
+Certificates issued by Let's Encrypt on 22 Oct (apex 14:00, `www` 14:10), both
+valid to 20 Jan 2027 and renewed automatically by Vercel.
 
-Not a problem: the web checkout builds its Paystack callback from the request
-host (`app/checkout/actions.ts:35`), so it follows whatever domain you're on.
-The mobile `CHECKOUT_CALLBACK_URL` is a sentinel the WebView watches for and
-never has to resolve.
+**No code changes were needed.** All four hardcoded references already assumed
+`abdmall.com`, so the domain going live made them correct rather than requiring
+edits: `layout.tsx:38` (`metadataBase`, which fixes social previews),
+`site-footer.tsx:131` (copyright), `mobile/src/lib/checkout.ts:8` (WebView
+sentinel, which never had to resolve), and `checkout-start/index.ts:116` (a
+fallback callback that was dead and is now live). Web checkout still derives its
+own callback from the request host (`app/checkout/actions.ts:46-51`), so
+localhost, previews and production each return to themselves.
 
-### 🟠 Point Supabase Auth at the real domain — *verify*
+Two things that cost time, worth recording:
+
+- The domain was bought 1 Aug but **ICANN contact verification was never
+  completed**, so on 16 Aug Namecheap parked it on
+  `verify-contact-details` / `failed-whois-verification.namecheap.com`. No DNS
+  change has any effect in that state. Clicking the verification link cleared it
+  in under an hour, not the 24–48h Namecheap quotes.
+- Namecheap keeps its parking records when you add new ones. Both the `www`
+  CNAME to `parkingpage.namecheap.com` and the `@` URL Redirect had to be
+  **deleted** — and an A record on `@` will not save while a URL Redirect Record
+  occupies the same host. Delete first, then add.
+
+### 🟡 `www` serves directly instead of redirecting
+
+`www.abdmall.com` returns 200 with the full site rather than redirecting to the
+apex, so both hostnames serve identical content. Harmless today; set it to
+**Redirect to Another Domain → abdmall.com** in Vercel → Settings → Domains if
+you want one canonical URL before you care about search ranking.
+
+### ✅ Supabase Auth pointed at the real domain — 22 Oct 2026
 
 *Supabase dashboard → Authentication → URL Configuration*
 
-- **Site URL** — the base for confirmation and password-reset links. If it's
-  still `http://localhost:3000`, every email you send a customer links to their
-  own machine.
-- **Redirect URLs** — must include the production origin.
+- **Site URL** → `https://abdmall.com`
+- **Redirect URLs** → `https://abdmall.com/**`, plus `http://localhost:3000/**`
+  so local sign-up doesn't send you to production.
+
+This matters more than it looks: **nothing in the codebase passes
+`emailRedirectTo` or `redirectTo`** — neither `apps/web/src/lib/auth.tsx:160`
+nor `apps/mobile/src/lib/auth.tsx:66` — so Supabase falls back to Site URL for
+every email link, with no per-call override.
+
+There is no `/auth/callback` route, so a confirmation link lands on the site
+root with the session tokens in the URL fragment; `supabase-js` picks them up
+via `detectSessionInUrl` and the user ends up signed in on the homepage.
+
+> Don't run `supabase config push` to manage this. `supabase/config.toml` has no
+> `[auth]` block at all, so a push would apply defaults over the dashboard
+> settings.
 
 ### 🟠 Production email sender — *verify*
 
@@ -94,7 +156,21 @@ Nothing in the codebase sends email of its own — checked. So the success scree
 "a receipt is on its way to your email" is currently untrue, and an admin invitee
 still depends on the built-in mailer to confirm their sign-up. One SMTP provider
 (Resend's free tier covers this volume) fixes confirmations, receipts and invites
-together. The blocker is domain DNS: SPF/DKIM/DMARC on the bought domain.
+together.
+
+**This is now unblocked** — the blocker was DNS on a domain that didn't resolve,
+and `abdmall.com` has been live since 22 Oct. One trap when you add the records:
+the domain already carries Namecheap's email-forwarding SPF
+(`v=spf1 include:spf.efwd.registrar-servers.com ~all`) alongside five
+`eforward*.registrar-servers.com` MX records. A domain may hold only **one** SPF
+record — adding a second breaks both. Merge instead:
+
+```
+v=spf1 include:spf.efwd.registrar-servers.com include:_spf.resend.com ~all
+```
+
+Leave the MX records unless you want to stop receiving forwarded mail; they
+affect receiving only, not sending.
 
 ---
 
@@ -192,7 +268,10 @@ Treat `main` as production from here on.
 
 > `vercel --prod` from the CLI currently fails during upload with a 500 from
 > `api.vercel.com/v2/files`, and the upload is 545 MB — worth a look if you ever
-> need the manual path back. The installed CLI is 50.39.0 against 59.5.0 latest.
+> need the manual path back. The installed CLI is 50.39.0 against 62.7.0 latest,
+> and its stored token is expired (`vercel whoami` → "token is not valid"), so
+> anything CLI-driven needs `vercel login` first. The dashboard is the lower-
+> friction path for domains and env vars.
 
 ### 🟠 44 Dependabot alerts on `main`
 
@@ -243,7 +322,12 @@ Not configuration, but each removes a class of go-live problem.
 | Web checkout moved onto those functions — one money path, one Paystack key | 24 Aug |
 | `checkout-start` v3 deployed, returning the lines it priced; live on production web | 24 Aug |
 | `paystack-webhook` deployed and tested end to end | 20 Aug |
-| `PAYSTACK_SECRET_KEY` set in Supabase — **test key** | 19 Aug |
+| `PAYSTACK_SECRET_KEY` set in Supabase — test key | 19 Aug |
+| `PAYSTACK_SECRET_KEY` rotated to the **live key** (digest `871e5e87…`) | 22 Oct |
+| Paystack webhook URL registered — *not yet proven end to end, see §1* | 22 Oct |
+| `abdmall.com` ICANN contact verification cleared; Namecheap DNS reactivated | 22 Oct |
+| `abdmall.com` + `www` pointed at Vercel, Let's Encrypt certs issued | 22 Oct |
+| Supabase Auth Site URL and Redirect URLs set to `https://abdmall.com` | 22 Oct |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |
 | Admin migration `20260819000000_admin_role.sql` applied to production | 19 Aug |
 | `olatundesodiq@gmail.com` flagged `is_admin` | 19 Aug |
