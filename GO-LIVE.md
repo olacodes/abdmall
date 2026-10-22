@@ -273,11 +273,34 @@ Treat `main` as production from here on.
 > anything CLI-driven needs `vercel login` first. The dashboard is the lower-
 > friction path for domains and env vars.
 
-### 🟠 44 Dependabot alerts on `main`
+### 🔴 93 Dependabot alerts on `main` — one is unauthenticated RCE
 
-1 critical, 20 high, 19 moderate, 4 low — GitHub reports them on every push.
-Work through them before an app-store reviewer or a customer does.
+**5 critical, 49 high, 31 moderate, 8 low** as of 22 Oct, counted from
+`gh api repos/olacodes/abdmall/dependabot/alerts`. That is up from 44 on 24 Aug,
+and criticals went 1 → 5. GitHub repeats the total on every push.
 <https://github.com/olacodes/abdmall/security/dependabot>
+
+The five criticals are three distinct advisories, and only one of them is
+actually dangerous here:
+
+| Advisory | Applies? |
+| --- | --- |
+| **Next.js — unauthenticated RCE in the Image Optimization API via AVIF** | **Yes.** Public storefront, no auth required to reach it |
+| Next.js — unauthenticated RCE on Windows-hosted servers | No — production is Linux on Vercel |
+| node-tar — decompression/parse DoS | Build-time only; low practical risk |
+
+Both Next.js advisories clear with the same bump — installed **16.2.12**,
+patched in **16.3.3** (`apps/web/package.json` and `package-lock.json`):
+
+```
+npm i next@^16.3.3 -w apps/web
+```
+
+Heed `AGENTS.md`: this Next.js diverges from training data, so read
+`node_modules/next/dist/docs/` before changing anything the upgrade touches.
+`tar` is transitive — `npm audit fix` reaches it.
+
+This was 🟠 while the store took no money. It is 🔴 now that it does.
 
 ### 🟡 `SUPABASE_SERVICE_ROLE_KEY` is now unused on Vercel
 
@@ -286,10 +309,10 @@ happen only inside the Edge Functions. The Vercel variable can be removed
 (`vercel env rm SUPABASE_SERVICE_ROLE_KEY production`). Keep it in your local
 `.env.local` — `apps/web/scripts/upload-product-images.mts` still needs it.
 
-### 🟡 Stale git remote
+### ✅ Stale git remote fixed — 22 Oct 2026
 
-`origin` still points at `olacodes/abdmall-web.git`; GitHub redirects to
-`olacodes/abdmall.git`. Redirects work but break tooling eventually:
+`origin` pointed at `olacodes/abdmall-web.git` and GitHub was redirecting every
+push to `olacodes/abdmall.git`. Repointed with:
 
 ```
 git remote set-url origin https://github.com/olacodes/abdmall.git
@@ -301,9 +324,14 @@ git remote set-url origin https://github.com/olacodes/abdmall.git
 
 Not configuration, but each removes a class of go-live problem.
 
-- **🟠 `apps/mobile/src/app/checkout.tsx:160,163` read `paid.current` during
-  render** — five lint errors and a genuine React violation with the compiler
-  enabled. The success screen can fail to update after payment.
+- **✅ `checkout.tsx` no longer reads a ref during render** (22 Oct, `3bf7b41`).
+  `paid` became `paidOrder` state — it was always data the success screen
+  renders, and with `reactCompiler` on the compiler could memoise the ref read
+  and show a stale reference and ₦0 to someone who had just paid. `reference`
+  stays a ref on purpose: it is read only inside async callbacks, where a ref
+  avoids the stale closure state would reintroduce. `expo lint` and `tsc` both
+  clean. **Not yet exercised on a device** — there is no build (see §3), so
+  check this screen during the webhook test, which lands on it.
 - **🟡 Honesty pass on v1 copy.** Rating, review and "sold" counts are shown to
   shoppers as fact. The admin can now edit or zero them — the dead footer links
   are the other half.
@@ -328,6 +356,8 @@ Not configuration, but each removes a class of go-live problem.
 | `abdmall.com` ICANN contact verification cleared; Namecheap DNS reactivated | 22 Oct |
 | `abdmall.com` + `www` pointed at Vercel, Let's Encrypt certs issued | 22 Oct |
 | Supabase Auth Site URL and Redirect URLs set to `https://abdmall.com` | 22 Oct |
+| Mobile success screen stopped reading a ref during render (`3bf7b41`) | 22 Oct |
+| `origin` repointed from `abdmall-web.git` to `abdmall.git` | 22 Oct |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |
 | Admin migration `20260819000000_admin_role.sql` applied to production | 19 Aug |
 | `olatundesodiq@gmail.com` flagged `is_admin` | 19 Aug |
