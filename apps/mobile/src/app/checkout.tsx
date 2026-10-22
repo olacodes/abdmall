@@ -45,7 +45,15 @@ export default function Checkout() {
   });
 
   const reference = useRef<string | null>(null);
-  const paid = useRef<{ reference: string; total: number } | null>(null);
+
+  // Snapshotted for the success screen, which renders after clear() has emptied
+  // the cart — `total` from useCart is 0 by then. State rather than a ref
+  // because it is read during render: the compiler is free to memoise a ref
+  // read, which can leave the screen showing a stale reference and amount.
+  const [paidOrder, setPaidOrder] = useState<{
+    reference: string;
+    total: number;
+  } | null>(null);
 
   // Web only: whether the Paystack tab has been opened (see the paying stage).
   const [payTabOpen, setPayTabOpen] = useState(false);
@@ -77,7 +85,7 @@ export default function Checkout() {
       return;
     }
     reference.current = res.reference;
-    paid.current = { reference: res.reference, total: res.total };
+    setPaidOrder({ reference: res.reference, total: res.total });
     setAuthUrl(res.authorizationUrl);
     setStage("paying");
   };
@@ -229,10 +237,10 @@ export default function Checkout() {
               Reference
             </Text>
             <Text className="mt-1 font-sans-bold text-lg text-gold-deep">
-              {paid.current?.reference}
+              {paidOrder?.reference}
             </Text>
             <Text className="mt-2 font-sans-bold text-2xl text-ink">
-              {formatNaira(paid.current?.total ?? 0)}
+              {formatNaira(paidOrder?.total ?? 0)}
             </Text>
           </View>
           <Pressable
