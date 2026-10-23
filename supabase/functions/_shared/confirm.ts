@@ -36,7 +36,14 @@ export async function confirmOrder(reference: string): Promise<ConfirmOutcome> {
 
   // Never trust an amount supplied by the caller — compare Paystack's figure
   // against the total we recorded when the order was created.
-  if (result.amountKobo !== order.total * 100 || result.currency !== "NGN") {
+  //
+  // At least, not exactly equal: `data.amount` is what the customer was
+  // CHARGED, and when the Paystack account passes fees to the customer that is
+  // the order total plus the fee. ABD-JPZ8WT-2430 was charged ₦1,624.37 against
+  // a ₦1,600 order and an exact check rejected it, which blocked both this path
+  // and the webhook — every live payment stuck on `pending`. Underpayment is
+  // the fraud we care about; paying more than we asked for is not.
+  if (result.amountKobo < order.total * 100 || result.currency !== "NGN") {
     return { ok: false, reason: "amount-mismatch" };
   }
 
