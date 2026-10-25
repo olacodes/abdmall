@@ -6,8 +6,12 @@ real orders. Code is not the blocker — most of what's left lives in a dashboar
 Status as of **25 Oct 2026**. Verified items say how they were verified; items
 marked *verify* are ones only you can see.
 
-**The money path works end to end.** A live payment was taken, the webhook
-confirmed it unaided, and the two bugs found on the way are fixed and deployed.
+**All three payment routes work end to end.** Card and Paystack bank transfer
+confirm themselves through the webhook; direct transfer into the shop's own
+account is confirmed by an admin. The two bugs found along the way are fixed
+and deployed, and the owner can now change the bank account, contact details
+and delivery pricing from `/admin/settings` without a deploy.
+
 What remains is mostly mobile, email and dependency housekeeping.
 
 Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon after
@@ -56,9 +60,10 @@ wait for the redirect, the app confirms the order itself and it flips to `paid`
 deny the app its own confirm call — pay, then close the tab the instant Paystack
 shows success. Bank transfer does this naturally.
 
-Keep a retest cheap: delivery adds ₦1,500 below the ₦100,000 free threshold
-(`checkout-start/index.ts:7-10`), so a ₦100 throwaway product in
-`/admin/products` costs ₦1,600 plus fees, refundable from Paystack.
+Keep a retest cheap: delivery is added below the free-delivery threshold — both
+values are now editable in `/admin/settings` — so at the current ₦1,500 a ₦100
+throwaway product in `/admin/products` costs ₦1,600 plus fees, refundable from
+Paystack.
 
 Reading the per-transaction webhook log: 200 = working · 401 = key/webhook mode
 mismatch · no attempt = URL not set on the **live** side · 500 = real DB error,
@@ -90,20 +95,15 @@ match does not. Deployed as `checkout-confirm` v5 and `paystack-webhook` v3.
 ### 🟡 Decide what happens to abandoned orders
 
 `checkout-start` writes the order row *before* contacting Paystack, so every
-abandoned checkout leaves a `pending` row behind. **Five** exist as of 25 Oct
-against 6 paid, and the admin dashboard counts any older than a day under
-"needs attention":
+abandoned checkout leaves a `pending` row behind. The backlog was cleared by
+hand on 25 Oct — **0 pending, 9 paid, 7 cancelled** — but nothing stops it
+rebuilding, so the decision is still open: sweep them on a schedule, or treat
+them as a funnel record.
 
-| Reference | Why it is pending |
-| --- | --- |
-| `ABD-DIRECT-TEST1` | test fixture for the direct-transfer flow — safe to cancel |
-| `ABD-KVDKUH-8824` | card checkout abandoned mid-flow on 23 Oct |
-| `ABD-1CHSZ1-6568`, `ABD-ZTW7I5-8284`, `ABD-ZTIB69-2109` | abandoned in August |
-
-Either sweep them on a schedule or treat them as a funnel record — but choose
-deliberately, because the count only grows. Note that `payment_method` now
-distinguishes a genuinely-awaiting-money direct transfer from an abandoned
-Paystack checkout; without that they are indistinguishable.
+`payment_method` is what distinguishes a direct transfer genuinely awaiting
+money from an abandoned Paystack checkout. Without it the two are
+indistinguishable, and cancelling the wrong one cancels an order whose
+customer has already sent the money.
 
 ### 🟡 Two test payments are unrefunded
 
@@ -280,13 +280,26 @@ fails with `42501 permission denied for table profiles` and ordinary profile
 edits still work. **Adding a user-editable column to `profiles` now means adding
 it to that grant.**
 
-### 🟠 Direct bank transfer — admin half built, checkout half not
+### ✅ Direct bank transfer — working end to end, 25 Oct 2026
 
-Payment into the shop's own account, outside Paystack. **Half shipped**: an
-admin can confirm one, but nothing can create one yet, so the route is not
-reachable by customers.
+Payment into the shop's own account, outside Paystack. Customers choose
+**"Pay to our account"** at checkout, get the account details and their order
+reference, and an admin confirms the payment from `/admin/orders` once it shows
+up on the statement.
 
-Done, 25 Oct (migrations `20261025000000` and `20261025010000`, both applied):
+Proven by three orders confirmed through the admin panel, two of them placed
+through the real checkout:
+
+| Order | Amount | |
+| --- | --- | --- |
+| `ABD-DIRECT-TEST1` | ₦1,600 | fixture |
+| `ABD-O7SO7N-4839` | ₦130,000 | placed and confirmed |
+| `ABD-O6F2YU-4926` | ₦250,000 | placed and confirmed |
+
+All three carry a non-null `paid_confirmed_by`, which is what distinguishes a
+hand-confirmed payment from a Paystack-verified one.
+
+Migrations `20261025000000` and `20261025010000`, both applied:
 
 - `confirm_direct_transfer(order_id, bank_reference)` — admin only,
   `payment_method = 'direct'` only, `pending` only. It **refuses a Paystack
@@ -302,23 +315,57 @@ Done, 25 Oct (migrations `20261025000000` and `20261025010000`, both applied):
   where it shows one.
 - Confirm panel on `/admin/orders/[id]`, shown only for pending direct orders.
 
-Still to build: the checkout side — a third payment method, a `checkout-start`
-branch that skips Paystack for it, and a screen showing the account details
-with the order reference to quote as the transfer narration.
+Checkout side: `checkout-start` returns before `initializeTransaction` for this
+method and writes the order with a **null `paystack_reference`** — putting the
+order ref there would read as though a transaction exists. The absent
+`authorizationUrl` is what tells the client to show `/checkout/transfer`
+instead of handing off to Paystack.
 
-**Two things to understand before finishing it.** Every direct transfer is
-manual work: a human checks the bank, matches a narration, and confirms. And a
+**Two things that stay true now it is live.** Every direct transfer is manual
+work: a human checks the bank, matches a narration, and confirms. And a
 customer who mistypes the reference creates a payment you cannot match to an
-order. Paystack's own bank transfer already avoids both and is proven working —
-direct transfer buys lower fees and some customers' trust, at that cost.
+order — which is why that screen leads with the reference, weighted more
+heavily than the account number. Paystack's own bank transfer avoids both and
+is also proven working; direct transfer buys lower fees and some customers'
+trust, at that cost.
 
 Not enforced at the database level: admins hold `UPDATE` on every column of
 `orders` (`admin_role.sql:97-102`), so `confirm_direct_transfer`'s guards are
-advisory — an admin can set `paid` directly and bypass them. Deliberate, same
-shape as the `profiles` grant issue but admin-only. Closing it would mean a
-column-level grant.
+advisory — an admin can set `paid` directly and bypass them. A deliberate
+choice, same shape as the `profiles` grant issue but admin-only. Closing it
+would mean a column-level grant.
 
-`ABD-DIRECT-TEST1` is a pending fixture for exercising the confirm flow.
+### ✅ Owner-editable settings at `/admin/settings` — 25 Oct 2026
+
+Bank account, contact details and delivery pricing moved out of hardcoded
+constants into a `shop_settings` row (migration `20261025020000`). One row,
+enforced by a boolean primary key that must be true, with no insert or delete
+policy. Public read — the bank details print on the checkout page and the
+WhatsApp number on every page. Admin-only write.
+
+**The cache tag is what makes a change appear immediately**, not the form. The
+storefront reads these through `unstable_cache` with a one-hour window and the
+footer renders on every page including the prerendered ones, so the save calls
+`updateTag("settings")` — the same mechanism the product admin relies on.
+Without it a change would trickle in over the following hour.
+
+**Delivery had the widest reach.** `deliveryFor` and its constants were used in
+eight places across both apps. A partial migration would have been worse than
+none: with `checkout-start` reading the database while a cart still used a
+constant, a customer would be shown one price and charged another. It moved
+everywhere at once, mobile included. Verified by setting the fee to ₦2,500 and
+watching `checkout-start` charge it, then restoring ₦1,500.
+
+The account number is the one field that routes money and fails silently in
+both directions, so it is shape-checked in the database (`^[0-9]{10}$`),
+checked again in the action to name the field rather than the constraint, and
+re-typed to save — but only once it has actually been edited.
+
+`DELIVERY_FEE` and `FREE_DELIVERY_THRESHOLD` remain in `@abdmall/core` as
+fallbacks. A failed settings read charges the long-standing fee rather than
+giving delivery away.
+
+Support email and phone are columns but unset — nothing renders them yet.
 
 ### 🟡 Someone has to watch `/admin/orders`
 
@@ -443,6 +490,9 @@ Not configuration, but each removes a class of go-live problem.
 | Webhook URL re-entered in **Live** mode; proven by `ABD-KVE4L7-4891` | 23 Oct |
 | Next.js 16.2.12 → 16.3.3 (`72b288b`), then → 16.4.1 (`d51bd26`) | 22–25 Oct |
 | Direct-transfer admin path + two migrations, applied (`3dbbdb1`) | 25 Oct |
+| Direct-transfer checkout + `/checkout/transfer` screen (`1031644`) | 25 Oct |
+| WhatsApp number changed to 0903 733 5409 (`1a1f372`) | 25 Oct |
+| `/admin/settings` + `shop_settings`, delivery pricing now editable (`8ef0f2e`) | 25 Oct |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |
 | Admin migration `20260819000000_admin_role.sql` applied to production | 19 Aug |
 | `olatundesodiq@gmail.com` flagged `is_admin` | 19 Aug |
