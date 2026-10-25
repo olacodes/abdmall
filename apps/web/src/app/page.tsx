@@ -14,20 +14,22 @@ import {
   Flame,
 } from "@/components/icons";
 import { getCategories, getProducts, getDealProducts } from "@/lib/catalogue";
-import { discountPercent } from "@/lib/format";
+import { getShopSettings } from "@/lib/settings";
+import { discountPercent, formatNaira } from "@/lib/format";
 
-const services = [
-  { icon: Truck, title: "Free delivery", note: "On orders over ₦100,000" },
+const services = (threshold: string) => [
+  { icon: Truck, title: "Free delivery", note: `On orders over ${threshold}` },
   { icon: Shield, title: "Buyer protection", note: "Secure, verified payments" },
   { icon: Wallet, title: "Pay your way", note: "Card or bank transfer" },
   { icon: Whatsapp, title: "Order on WhatsApp", note: "We're one tap away" },
 ];
 
 export default async function Home() {
-  const [categories, products, dealProducts] = await Promise.all([
+  const [categories, products, dealProducts, settings] = await Promise.all([
     getCategories(),
     getProducts(),
     getDealProducts(),
+    getShopSettings(),
   ]);
   const byCategory = (slug: string) =>
     products.filter((p) => p.category === slug);
@@ -61,7 +63,7 @@ export default async function Home() {
 
       {/* ===== SERVICE STRIP ===== */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {services.map(({ icon: Icon, title, note }) => (
+        {services(formatNaira(settings.freeDeliveryThreshold)).map(({ icon: Icon, title, note }) => (
           <div
             key={title}
             className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4"

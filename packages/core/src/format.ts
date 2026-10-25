@@ -21,11 +21,22 @@ export function compactCount(n: number): string {
   return String(n);
 }
 
-/** Flat delivery fee; free over the threshold. Defaults per product doc. */
+/**
+ * Flat delivery fee; free over the threshold.
+ *
+ * These are the fallbacks, not the source of truth — both values are editable
+ * in `shop_settings` and reach the apps through it. They remain here so a
+ * settings read that fails degrades to the long-standing values rather than
+ * charging ₦0 delivery, and so the fee can be computed in pure code.
+ */
 export const DELIVERY_FEE = 1500;
 export const FREE_DELIVERY_THRESHOLD = 100000;
 
-export function deliveryFor(subtotal: number): number {
-  if (subtotal === 0 || subtotal >= FREE_DELIVERY_THRESHOLD) return 0;
-  return DELIVERY_FEE;
+export function deliveryFor(
+  subtotal: number,
+  fee: number = DELIVERY_FEE,
+  threshold: number = FREE_DELIVERY_THRESHOLD,
+): number {
+  if (subtotal === 0 || subtotal >= threshold) return 0;
+  return fee;
 }

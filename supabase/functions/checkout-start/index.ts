@@ -2,12 +2,17 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders, json } from "../_shared/cors.ts";
 import { initializeTransaction } from "../_shared/paystack.ts";
 
-// Delivery rule mirrors @abdmall/core deliveryFor (flat ₦1,500, free ≥ ₦100k).
-// Inlined because Deno can't import the unpublished workspace package.
+// Delivery rule mirrors @abdmall/core deliveryFor. Inlined because Deno can't
+// import the unpublished workspace package.
+//
+// The live values come from shop_settings, which the owner edits — these are
+// only the fallback for a read that fails. Falling back matters: returning 0
+// would give away free delivery on every order until someone noticed, so the
+// failure mode is "charges the long-standing fee", not "charges nothing".
 const DELIVERY_FEE = 1500;
 const FREE_DELIVERY_THRESHOLD = 100000;
-const deliveryFor = (subtotal: number) =>
-  subtotal === 0 || subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+const deliveryFor = (subtotal: number, fee: number, threshold: number) =>
+  subtotal === 0 || subtotal >= threshold ? 0 : fee;
 
 function generateOrderRef(): string {
   const stamp = Date.now().toString(36).toUpperCase().slice(-6);
@@ -79,8 +84,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Owner-editable, so read rather than assumed. This is the authoritative
+    // delivery figure — whatever the client displayed is recomputed here.
+    const { data: settings } = await admin
+      .from("shop_settings")
+      .select("delivery_fee, free_delivery_threshold")
+      .maybeSingle();
+
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-    const delivery = deliveryFor(subtotal);
+    const delivery = deliveryFor(
+      subtotal,
+      settings?.delivery_fee ?? DELIVERY_FEE,
+      settings?.free_delivery_threshold ?? FREE_DELIVERY_THRESHOLD,
+    );
     const total = subtotal + delivery;
 
     const reference = generateOrderRef();

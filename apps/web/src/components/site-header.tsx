@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { WHATSAPP } from "@abdmall/core";
+import { whatsappLink, type ShopSettings } from "@abdmall/core";
 import {
   CartGlyph,
   Search,
@@ -69,7 +69,13 @@ function SearchForm() {
   );
 }
 
-export function SiteHeader({ categories }: { categories: Category[] }) {
+export function SiteHeader({
+  categories,
+  settings,
+}: {
+  categories: Category[];
+  settings: ShopSettings;
+}) {
   const { count, subtotal } = useCart();
   const { user, isAdmin } = useUser();
 
@@ -82,7 +88,9 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
             <Truck className="h-4 w-4 shrink-0" />
             <span className="truncate">
               Free delivery over{" "}
-              <span className="font-bold">₦100,000</span>
+              <span className="font-bold">
+                {formatNaira(settings.freeDeliveryThreshold)}
+              </span>
             </span>
           </p>
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
@@ -104,7 +112,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
               Help
             </Link>
             <a
-              href={WHATSAPP.link}
+              href={whatsappLink(settings.whatsappNumber)}
               className="flex items-center gap-1 font-semibold hover:underline"
             >
               <Whatsapp className="h-4 w-4" />

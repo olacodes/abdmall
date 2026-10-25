@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Product } from "@abdmall/core";
-import { fetchCategories, fetchProducts } from "@abdmall/supabase";
+import {
+  fetchCategories,
+  fetchProducts,
+  fetchShopSettings,
+} from "@abdmall/supabase";
 import { supabase } from "./supabase";
 
 /**
@@ -49,4 +53,23 @@ export function deals(products: Product[]): Product[] {
 
 export function bySlug(products: Product[], slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);
+}
+
+/**
+ * Owner-editable shop settings — bank account, contact details, delivery
+ * pricing.
+ *
+ * Same staleness reasoning as the catalogue, and it matters more here: the
+ * delivery fee this returns is what the cart *displays*, while checkout-start
+ * recomputes what the customer is actually *charged* from the same row. A
+ * device holding a stale fee would quote a price the server then disagrees
+ * with, so this refetches on the same five-minute cadence rather than being
+ * cached for the session.
+ */
+export function useShopSettings() {
+  return useQuery({
+    queryKey: ["shop-settings"],
+    queryFn: () => fetchShopSettings(supabase),
+    staleTime: CATALOGUE_STALE_MS,
+  });
 }

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Category, Product } from "@abdmall/core";
+import { DEFAULT_SETTINGS, type Category, type Product, type ShopSettings } from "@abdmall/core";
 
 /**
  * Client-agnostic catalogue queries. Each takes a SupabaseClient so the web app
@@ -88,4 +88,48 @@ export async function fetchProducts(
     .order("sort_order");
   if (error) throw new Error(`Failed to load products: ${error.message}`);
   return (data as ProductRow[]).map(mapProduct);
+}
+
+type ShopSettingsRow = {
+  bank_account_name: string;
+  bank_account_number: string;
+  bank_name: string;
+  whatsapp_number: string;
+  support_email: string | null;
+  support_phone: string | null;
+  delivery_fee: number;
+  free_delivery_threshold: number;
+};
+
+/**
+ * The single `shop_settings` row, owner-editable from /admin/settings.
+ *
+ * Falls back to DEFAULT_SETTINGS rather than throwing: these values render the
+ * bank account on the checkout page and set what delivery costs, so a transient
+ * read failure must degrade to the last-known-good values rather than showing a
+ * blank account number or quietly charging ₦0 delivery.
+ */
+export async function fetchShopSettings(
+  client: SupabaseClient,
+): Promise<ShopSettings> {
+  const { data, error } = await client
+    .from("shop_settings")
+    .select(
+      "bank_account_name, bank_account_number, bank_name, whatsapp_number, support_email, support_phone, delivery_fee, free_delivery_threshold",
+    )
+    .maybeSingle();
+
+  if (error || !data) return DEFAULT_SETTINGS;
+
+  const row = data as ShopSettingsRow;
+  return {
+    bankAccountName: row.bank_account_name,
+    bankAccountNumber: row.bank_account_number,
+    bankName: row.bank_name,
+    whatsappNumber: row.whatsapp_number,
+    supportEmail: row.support_email,
+    supportPhone: row.support_phone,
+    deliveryFee: row.delivery_fee,
+    freeDeliveryThreshold: row.free_delivery_threshold,
+  };
 }

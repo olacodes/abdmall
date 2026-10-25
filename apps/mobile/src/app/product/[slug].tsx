@@ -6,9 +6,11 @@ import {
   compactCount,
   discountPercent,
   formatNaira,
+  DELIVERY_FEE,
+  FREE_DELIVERY_THRESHOLD,
   type Product,
 } from "@abdmall/core";
-import { useProducts, bySlug } from "@/lib/catalogue";
+import { useProducts, bySlug, useShopSettings } from "@/lib/catalogue";
 import { useCart } from "@/lib/cart";
 import { ProductArt } from "@/components/product-art";
 
@@ -31,6 +33,7 @@ export default function ProductScreen() {
   const router = useRouter();
   const { addItem } = useCart();
   const productsQ = useProducts();
+  const { data: settings } = useShopSettings();
   const product: Product | undefined = productsQ.data
     ? bySlug(productsQ.data, slug)
     : undefined;
@@ -155,7 +158,7 @@ export default function ProductScreen() {
             <View className="flex-row items-center gap-3">
               <Ionicons name="car-outline" size={20} color="#b8860b" />
               <Text className="flex-1 font-sans text-sm text-muted">
-                Delivery in 2–4 working days · flat ₦1,500, free over ₦100,000
+                {`Delivery in 2–4 working days · flat ${formatNaira(settings?.deliveryFee ?? DELIVERY_FEE)}, free over ${formatNaira(settings?.freeDeliveryThreshold ?? FREE_DELIVERY_THRESHOLD)}`}
               </Text>
             </View>
             <View className="flex-row items-center gap-3">

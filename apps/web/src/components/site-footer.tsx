@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { WHATSAPP } from "@abdmall/core";
+import { whatsappLink, type ShopSettings } from "@abdmall/core";
 import { CartGlyph, Shield, Truck, Wallet, Whatsapp } from "@/components/icons";
 import type { Category } from "@/lib/mock-data";
 
@@ -11,7 +11,13 @@ const trust = [
 
 const payments = ["Paystack", "Visa", "Mastercard", "Verve"];
 
-export function SiteFooter({ categories }: { categories: Category[] }) {
+export function SiteFooter({
+  categories,
+  settings,
+}: {
+  categories: Category[];
+  settings: ShopSettings;
+}) {
   const columns = [
     {
       title: "Shop",
@@ -70,7 +76,7 @@ export function SiteFooter({ categories }: { categories: Category[] }) {
             essentials — delivered to your door across Nigeria.
           </p>
           <a
-            href={WHATSAPP.link}
+            href={whatsappLink(settings.whatsappNumber)}
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-black"
           >
             <Whatsapp className="h-4 w-4" /> Chat with us on WhatsApp

@@ -32,7 +32,21 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "abdmall:cart";
 
-export function CartProvider({ children }: { children: ReactNode }) {
+/**
+ * Delivery pricing is passed in from the server layout rather than imported as
+ * a constant, because the owner edits it in /admin/settings and checkout-start
+ * recomputes the charge from the same row. If this displayed a stale constant
+ * the customer would be shown one price and charged another.
+ */
+export function CartProvider({
+  children,
+  deliveryFee,
+  freeDeliveryThreshold,
+}: {
+  children: ReactNode;
+  deliveryFee?: number;
+  freeDeliveryThreshold?: number;
+}) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -97,7 +111,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CartContextValue>(() => {
     const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const delivery = deliveryFor(subtotal);
+    const delivery = deliveryFor(subtotal, deliveryFee, freeDeliveryThreshold);
     return {
       items,
       count: items.reduce((sum, i) => sum + i.qty, 0),
@@ -110,7 +124,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setQty,
       clear,
     };
-  }, [items, hydrated]);
+  }, [items, hydrated, deliveryFee, freeDeliveryThreshold]);
 
   return <CartContext value={value}>{children}</CartContext>;
 }

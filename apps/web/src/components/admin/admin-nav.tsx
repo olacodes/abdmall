@@ -9,6 +9,7 @@ const links = [
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/team", label: "Team" },
+  { href: "/admin/settings", label: "Settings" },
 ] as const;
 
 export function AdminNav() {

@@ -8,13 +8,14 @@ import { ProductCard } from "@/components/ui/product-card";
 import { PriceTag } from "@/components/ui/price-tag";
 import { Badge } from "@/components/ui/badge";
 import { Star, Truck, Shield, Wallet, Whatsapp } from "@/components/icons";
-import { WHATSAPP } from "@abdmall/core";
-import { compactCount } from "@/lib/format";
+import { whatsappLink } from "@abdmall/core";
+import { compactCount, formatNaira } from "@/lib/format";
 import {
   getCategories,
   getProductBySlug,
   getProducts,
 } from "@/lib/catalogue";
+import { getShopSettings } from "@/lib/settings";
 import type { Product } from "@/lib/mock-data";
 
 export async function generateStaticParams() {
@@ -55,10 +56,11 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [product, categories, products] = await Promise.all([
+  const [product, categories, products, settings] = await Promise.all([
     getProductBySlug(slug),
     getCategories(),
     getProducts(),
+    getShopSettings(),
   ]);
   if (!product) notFound();
 
@@ -153,9 +155,10 @@ export default async function ProductPage({
 
           {/* WhatsApp order */}
           <a
-            href={`${WHATSAPP.link}?text=${encodeURIComponent(
+            href={whatsappLink(
+              settings.whatsappNumber,
               `Hi abdmall, I'd like to order: ${product.name}`,
-            )}`}
+            )}
             className="mt-3 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#25D366] bg-[#25D366]/10 px-6 text-sm font-semibold text-[#128C3E] transition-colors hover:bg-[#25D366]/20"
           >
             <Whatsapp className="h-5 w-5" /> Order on WhatsApp
@@ -170,7 +173,8 @@ export default async function ProductPage({
                   Delivery in 2–4 working days
                 </p>
                 <p className="text-muted">
-                  Flat ₦1,500 nationwide · free over ₦100,000
+                  Flat {formatNaira(settings.deliveryFee)} nationwide · free
+                  over {formatNaira(settings.freeDeliveryThreshold)}
                 </p>
               </div>
             </div>

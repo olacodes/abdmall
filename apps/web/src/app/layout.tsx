@@ -7,6 +7,7 @@ import { StorefrontOnly } from "@/components/storefront-only";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth";
 import { getCategories } from "@/lib/catalogue";
+import { getShopSettings } from "@/lib/settings";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -54,7 +55,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const categories = await getCategories();
+  const [categories, settings] = await Promise.all([
+    getCategories(),
+    getShopSettings(),
+  ]);
 
   return (
     <html
@@ -66,13 +70,16 @@ export default async function RootLayout({
           Skip to content
         </a>
         <AuthProvider>
-          <CartProvider>
-            <SiteHeader categories={categories} />
+          <CartProvider
+            deliveryFee={settings.deliveryFee}
+            freeDeliveryThreshold={settings.freeDeliveryThreshold}
+          >
+            <SiteHeader categories={categories} settings={settings} />
             <main id="main" className="flex-1">
               {children}
             </main>
             <StorefrontOnly>
-              <SiteFooter categories={categories} />
+              <SiteFooter categories={categories} settings={settings} />
             </StorefrontOnly>
           </CartProvider>
         </AuthProvider>

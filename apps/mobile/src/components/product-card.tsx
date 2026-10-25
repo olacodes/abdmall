@@ -8,13 +8,16 @@ import {
   FREE_DELIVERY_THRESHOLD,
   type Product,
 } from "@abdmall/core";
+import { useShopSettings } from "@/lib/catalogue";
 import { ProductArt } from "./product-art";
 
 export function ProductCard({ product }: { product: Product }) {
   const off = product.oldPrice
     ? discountPercent(product.oldPrice, product.price)
     : 0;
-  const freeDelivery = product.price >= FREE_DELIVERY_THRESHOLD;
+  const { data: settings } = useShopSettings();
+  const freeDelivery =
+    product.price >= (settings?.freeDeliveryThreshold ?? FREE_DELIVERY_THRESHOLD);
   const lowStock = product.stock !== undefined && product.stock <= 8;
 
   return (

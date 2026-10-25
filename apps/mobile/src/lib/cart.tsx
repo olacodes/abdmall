@@ -8,6 +8,7 @@ import {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { deliveryFor, type AddPayload, type CartItem } from "@abdmall/core";
+import { useShopSettings } from "./catalogue";
 
 /**
  * Mobile cart — Context + AsyncStorage, mirroring the web CartProvider. Types
@@ -33,6 +34,7 @@ const STORAGE_KEY = "abdmall:cart";
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const { data: settings } = useShopSettings();
 
   // Load once on mount from AsyncStorage.
   useEffect(() => {
@@ -91,7 +93,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const clear = () => setItems([]);
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const delivery = deliveryFor(subtotal);
+    // Owner-editable; falls back to the long-standing values while the
+    // settings query is still in flight. checkout-start recomputes the real
+    // charge from the same row, so this is display only.
+    const delivery = deliveryFor(
+      subtotal,
+      settings?.deliveryFee,
+      settings?.freeDeliveryThreshold,
+    );
     return {
       items,
       count: items.reduce((sum, i) => sum + i.qty, 0),
@@ -104,7 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setQty,
       clear,
     };
-  }, [items, hydrated]);
+  }, [items, hydrated, settings?.deliveryFee, settings?.freeDeliveryThreshold]);
 
   return <CartContext value={value}>{children}</CartContext>;
 }
