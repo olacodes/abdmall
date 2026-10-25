@@ -37,3 +37,34 @@ export async function setOrderStatus(
   revalidatePath("/admin");
   return { savedAt: Date.now() };
 }
+
+/**
+ * Marks a direct bank transfer paid — the one payment route with no Paystack
+ * verification behind it, so a human vouches for the money instead.
+ *
+ * The rules live in the `confirm_direct_transfer` database function —
+ * admin-only, direct-transfer orders only, pending only — so they hold
+ * however it is called, not just through this page. The bank reference is
+ * recorded when given and omitted when not.
+ */
+export async function confirmDirectTransfer(
+  _prev: OrderActionState,
+  formData: FormData,
+): Promise<OrderActionState> {
+  const { supabase } = await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const bankReference = String(formData.get("bank_reference") ?? "").trim();
+  if (!id) return { error: "Missing order." };
+
+  const { error } = await supabase.rpc("confirm_direct_transfer", {
+    p_order_id: id,
+    p_bank_reference: bankReference || null,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${id}`);
+  revalidatePath("/admin");
+  return { savedAt: Date.now() };
+}

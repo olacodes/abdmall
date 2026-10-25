@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { formatNaira } from "@/lib/format";
 import { getAdminOrder, STATUS_LABEL, STATUS_STYLE } from "@/lib/admin-orders";
 import { OrderStatusControls } from "@/components/admin/order-status";
+import { ConfirmTransfer } from "@/components/admin/confirm-transfer";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -148,22 +149,49 @@ export default async function AdminOrderPage({ params }: Params) {
                     ? "Bank transfer"
                     : order.paymentMethod === "card"
                       ? "Card"
-                      : "—"}
+                      : order.paymentMethod === "direct"
+                        ? "Direct transfer"
+                        : "—"}
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-muted">Verified</dt>
+                <dt className="text-muted">
+                  {order.paidConfirmedBy ? "Confirmed" : "Verified"}
+                </dt>
                 <dd className="text-ink">
                   {order.paidAt ? when(order.paidAt) : "Not yet"}
                 </dd>
               </div>
-              <div className="flex justify-between gap-3">
-                <dt className="shrink-0 text-muted">Paystack ref</dt>
-                <dd className="truncate font-mono text-xs text-ink">
-                  {order.paystackReference ?? "—"}
-                </dd>
-              </div>
+              {order.paidConfirmedBy ? (
+                <div className="flex justify-between gap-3">
+                  <dt className="shrink-0 text-muted">Bank ref</dt>
+                  <dd className="truncate font-mono text-xs text-ink">
+                    {order.paidReference}
+                  </dd>
+                </div>
+              ) : (
+                <div className="flex justify-between gap-3">
+                  <dt className="shrink-0 text-muted">Paystack ref</dt>
+                  <dd className="truncate font-mono text-xs text-ink">
+                    {order.paystackReference ?? "—"}
+                  </dd>
+                </div>
+              )}
             </dl>
+            {order.paidConfirmedBy ? (
+              <p className="mt-3 border-t border-line pt-3 text-xs text-faint">
+                Marked paid by hand against a bank statement — no Paystack
+                verification behind this one.
+              </p>
+            ) : null}
+            {order.paymentMethod === "direct" && order.status === "pending" ? (
+              <div className="mt-4 border-t border-line pt-4">
+                <ConfirmTransfer
+                  id={order.id}
+                  total={formatNaira(order.total)}
+                />
+              </div>
+            ) : null}
           </div>
 
           {/* Fulfilment */}

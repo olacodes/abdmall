@@ -45,6 +45,9 @@ export type AdminOrder = {
   paymentMethod: string | null;
   paystackReference: string | null;
   paidAt: string | null;
+  /** Set only on a direct transfer confirmed by hand; null for Paystack orders. */
+  paidConfirmedBy: string | null;
+  paidReference: string | null;
   createdAt: string;
   isGuest: boolean;
   items: AdminOrderItem[];
@@ -67,6 +70,8 @@ type OrderRow = {
   payment_method: string | null;
   paystack_reference: string | null;
   paid_at: string | null;
+  paid_confirmed_by: string | null;
+  paid_reference: string | null;
   created_at: string;
   order_items: {
     id: string;
@@ -79,7 +84,7 @@ type OrderRow = {
 };
 
 const ORDER_COLUMNS =
-  "id, reference, user_id, email, full_name, phone, address_line, city, state, status, subtotal, delivery_fee, total, payment_method, paystack_reference, paid_at, created_at, order_items(id, name, price, quantity, size, image_url)";
+  "id, reference, user_id, email, full_name, phone, address_line, city, state, status, subtotal, delivery_fee, total, payment_method, paystack_reference, paid_at, paid_confirmed_by, paid_reference, created_at, order_items(id, name, price, quantity, size, image_url)";
 
 function mapOrder(row: OrderRow): AdminOrder {
   return {
@@ -98,6 +103,8 @@ function mapOrder(row: OrderRow): AdminOrder {
     paymentMethod: row.payment_method,
     paystackReference: row.paystack_reference,
     paidAt: row.paid_at,
+    paidConfirmedBy: row.paid_confirmed_by,
+    paidReference: row.paid_reference,
     createdAt: row.created_at,
     isGuest: row.user_id === null,
     items: (row.order_items ?? []).map((i) => ({
