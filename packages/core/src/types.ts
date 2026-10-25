@@ -37,7 +37,8 @@ export type Order = {
   address: string;
   city: string;
   state: string;
-  method: "card" | "transfer";
+  /** `direct` is a transfer into the shop's own account — see BANK_DETAILS. */
+  method: "card" | "transfer" | "direct";
   items: { name: string; qty: number; price: number; size?: string }[];
   subtotal: number;
   delivery: number;

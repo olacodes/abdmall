@@ -23,7 +23,7 @@ type CheckoutInput = {
   address: string;
   city: string;
   state: string;
-  method: "card" | "transfer";
+  method: "card" | "transfer" | "direct";
   lines: CartLine[];
 };
 
@@ -31,7 +31,8 @@ type CheckoutInput = {
 type OrderLine = { name: string; qty: number; price: number; size?: string };
 
 type StartResponse = {
-  authorizationUrl: string;
+  /** Absent for a direct transfer — there is no Paystack page to send them to. */
+  authorizationUrl?: string;
   reference: string;
   subtotal: number;
   delivery: number;

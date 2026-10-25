@@ -100,7 +100,11 @@ Deno.serve(async (req) => {
         delivery_fee: delivery,
         total,
         payment_method: body.method ?? "card",
-        paystack_reference: reference,
+        // A direct transfer never reaches Paystack, so it has no transaction
+        // to point at. Writing the order ref here anyway would read as though
+        // one exists — and confirm_direct_transfer would then mark it paid
+        // next to a Paystack reference that never existed.
+        paystack_reference: body.method === "direct" ? null : reference,
       })
       .select("id")
       .single();
@@ -112,6 +116,27 @@ Deno.serve(async (req) => {
       .from("order_items")
       .insert(items.map((i) => ({ ...i, order_id: order.id })));
     if (itemsErr) return json({ error: "Could not save your order items." }, 500);
+
+    // Direct transfer: the money lands in the shop's own account, so there is
+    // no Paystack transaction to initialize and nothing will confirm this
+    // automatically. The order waits on `pending` until an admin matches it
+    // against a bank statement (confirm_direct_transfer). Returning no
+    // authorizationUrl is what tells the client to show the account details
+    // rather than hand off to Paystack.
+    if (body.method === "direct") {
+      return json({
+        reference,
+        subtotal,
+        delivery,
+        total,
+        items: items.map((i) => ({
+          name: i.name,
+          qty: i.quantity,
+          price: i.price,
+          size: i.size ?? undefined,
+        })),
+      });
+    }
 
     const callbackUrl = body.callbackUrl ?? "https://abdmall.com/checkout/callback";
     const init = await initializeTransaction({

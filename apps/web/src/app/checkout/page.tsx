@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { formatNaira } from "@/lib/format";
 import { saveLastOrder, type Order } from "@/lib/order";
@@ -17,7 +18,7 @@ import {
   Check,
 } from "@/components/icons";
 
-type Method = "card" | "transfer";
+type Method = "card" | "transfer" | "direct";
 
 function Field({
   label,
@@ -51,6 +52,7 @@ function Field({
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const { items, subtotal, delivery, total, hydrated } = useCart();
   const [method, setMethod] = useState<Method>("card");
   const [processing, setProcessing] = useState(false);
@@ -122,9 +124,18 @@ export default function CheckoutPage() {
       total: res.total,
     };
 
-    // Stash it, then hand off to Paystack. The cart is cleared on the success
-    // screen — after the payment has been verified.
     saveLastOrder(order);
+
+    // A direct transfer has no Paystack page to hand off to: the order exists
+    // and is waiting for money that nothing here can detect. Send them to the
+    // account details instead, where the reference they must quote is shown.
+    if (!res.authorizationUrl) {
+      router.push("/checkout/transfer");
+      return;
+    }
+
+    // Otherwise hand off to Paystack. The cart is cleared on the success
+    // screen — after the payment has been verified.
     window.location.href = res.authorizationUrl;
   };
 
@@ -173,6 +184,7 @@ export default function CheckoutPage() {
                 [
                   { key: "card", label: "Debit / Credit Card", Icon: CreditCard },
                   { key: "transfer", label: "Bank Transfer", Icon: Bank },
+                  { key: "direct", label: "Pay to our account", Icon: Bank },
                 ] as const
               ).map(({ key, label, Icon }) => (
                 <button
@@ -203,8 +215,19 @@ export default function CheckoutPage() {
             </div>
             <p className="mt-4 flex items-center gap-2 rounded-lg bg-surface-2 px-4 py-3 text-xs text-muted">
               <Lock className="h-4 w-4 shrink-0 text-gold" />
-              You&rsquo;ll complete payment securely via Paystack. Your order is
-              confirmed only after we verify the transaction server-side.
+              {method === "direct" ? (
+                <>
+                  We&rsquo;ll show you our account details next. Transfers are
+                  checked by hand, so your order is confirmed once we&rsquo;ve
+                  seen the payment — not straight away.
+                </>
+              ) : (
+                <>
+                  You&rsquo;ll complete payment securely via Paystack. Your
+                  order is confirmed only after we verify the transaction
+                  server-side.
+                </>
+              )}
             </p>
           </section>
         </div>
