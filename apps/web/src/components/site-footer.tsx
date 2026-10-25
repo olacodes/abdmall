@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WHATSAPP } from "@abdmall/core";
 import { CartGlyph, Shield, Truck, Wallet, Whatsapp } from "@/components/icons";
 import type { Category } from "@/lib/mock-data";
 
@@ -69,7 +70,7 @@ export function SiteFooter({ categories }: { categories: Category[] }) {
             essentials — delivered to your door across Nigeria.
           </p>
           <a
-            href="https://wa.me/2348068282270"
+            href={WHATSAPP.link}
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-black"
           >
             <Whatsapp className="h-4 w-4" /> Chat with us on WhatsApp

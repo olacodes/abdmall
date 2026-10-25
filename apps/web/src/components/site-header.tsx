@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { WHATSAPP } from "@abdmall/core";
 import {
   CartGlyph,
   Search,
@@ -103,7 +104,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
               Help
             </Link>
             <a
-              href="https://wa.me/2348068282270"
+              href={WHATSAPP.link}
               className="flex items-center gap-1 font-semibold hover:underline"
             >
               <Whatsapp className="h-4 w-4" />

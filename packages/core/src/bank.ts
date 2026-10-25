@@ -17,3 +17,18 @@ export const BANK_DETAILS = {
   accountNumber: "1999708746",
   bank: "Access Bank",
 } as const;
+
+/**
+ * The shop's WhatsApp line, used by the header, footer and the "Order on
+ * WhatsApp" button on a product page.
+ *
+ * `wa.me` wants the international form with no `+`, spaces or leading zero —
+ * 0903 733 5409 becomes 2349037335409. `display` is the same number written
+ * the way a Nigerian customer would read it.
+ */
+export const WHATSAPP = {
+  /** For wa.me links. International format, digits only. */
+  number: "2349037335409",
+  display: "0903 733 5409",
+  link: "https://wa.me/2349037335409",
+} as const;

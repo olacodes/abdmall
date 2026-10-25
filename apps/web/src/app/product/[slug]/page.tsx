@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/ui/product-card";
 import { PriceTag } from "@/components/ui/price-tag";
 import { Badge } from "@/components/ui/badge";
 import { Star, Truck, Shield, Wallet, Whatsapp } from "@/components/icons";
+import { WHATSAPP } from "@abdmall/core";
 import { compactCount } from "@/lib/format";
 import {
   getCategories,
@@ -152,7 +153,7 @@ export default async function ProductPage({
 
           {/* WhatsApp order */}
           <a
-            href={`https://wa.me/2348068282270?text=${encodeURIComponent(
+            href={`${WHATSAPP.link}?text=${encodeURIComponent(
               `Hi abdmall, I'd like to order: ${product.name}`,
             )}`}
             className="mt-3 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#25D366] bg-[#25D366]/10 px-6 text-sm font-semibold text-[#128C3E] transition-colors hover:bg-[#25D366]/20"
