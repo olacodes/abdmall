@@ -3,8 +3,12 @@
 Everything that has to be **set, registered or configured** before abdmall takes
 real orders. Code is not the blocker — most of what's left lives in a dashboard.
 
-Status as of **22 Oct 2026**. Verified items say how they were verified; items
+Status as of **25 Oct 2026**. Verified items say how they were verified; items
 marked *verify* are ones only you can see.
+
+**The money path works end to end.** A live payment was taken, the webhook
+confirmed it unaided, and the two bugs found on the way are fixed and deployed.
+What remains is mostly mobile, email and dependency housekeeping.
 
 Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon after
 
@@ -25,7 +29,7 @@ Rotated 22 Oct 14:18 UTC — confirmed by the digest in `supabase secrets list`
 changing from `86e0a45a…` to `871e5e87…` (previous value dated 19 Aug). No
 redeploy needed; secrets are read per request.
 
-### ✅ Webhook registered — 🟠 but not yet proven end to end
+### ✅ Webhook registered and proven — 23 Oct 2026
 
 *Settings → API Keys & Webhooks → Webhook URL*
 
@@ -33,51 +37,79 @@ redeploy needed; secrets are read per request.
 https://acmkyuwkfualxwlluwbs.supabase.co/functions/v1/paystack-webhook
 ```
 
-Registered 22 Oct. What has been verified from outside:
+**Register it in Live mode.** It was first entered while the dashboard was in
+Test mode, and Paystack keeps the two URLs as separate fields — so a real
+payment on 22 Oct produced no delivery attempt at all. The page header reads
+"API Configuration - Live Mode" and the secret shows `sk_live_…` when you are
+on the right tab.
 
-| Probe | Result |
-| --- | --- |
-| `GET` | 405 — matches `index.ts:45` |
-| `POST`, no signature | 401 Invalid signature |
-| `POST`, bogus signature | 401 Invalid signature |
+Proven by `ABD-KVE4L7-4891`: paid by **bank transfer**, which the customer
+completes in their banking app with the browser closed, so `checkout-confirm`
+had no opportunity to run. Created 11:11:53, reached `paid` at 11:13:08 with
+nothing else touching it.
 
-A 401 rather than the 500 "Not configured" of `index.ts:50` proves the function
-can read `PAYSTACK_SECRET_KEY`. What that does **not** prove is that Paystack is
-actually calling the URL, or that the key is live-mode rather than another test
-key — neither is observable from here.
+**The trap, recorded because it nearly hid both bugs.** A normal successful
+purchase does not test the webhook: `checkout-confirm` and `paystack-webhook`
+both call the same `confirmOrder()` (`_shared/confirm.ts:19`), so if you pay and
+wait for the redirect, the app confirms the order itself and it flips to `paid`
+**even with the webhook completely broken**. To exercise the webhook you have to
+deny the app its own confirm call — pay, then close the tab the instant Paystack
+shows success. Bank transfer does this naturally.
 
-**The outstanding test, and the trap in it.** A normal successful purchase does
-not test the webhook: `checkout-confirm` and `paystack-webhook` both call the
-same `confirmOrder()` (`_shared/confirm.ts:19`), so if you pay and wait for the
-redirect, the app confirms the order itself and it flips to `paid` **even with
-the webhook completely broken**. To exercise the webhook you have to deny the
-app its own confirm call — pay, then **close the tab the instant Paystack shows
-success**, before the redirect lands. If the order still reaches `paid`, only
-the webhook can have done it.
+Keep a retest cheap: delivery adds ₦1,500 below the ₦100,000 free threshold
+(`checkout-start/index.ts:7-10`), so a ₦100 throwaway product in
+`/admin/products` costs ₦1,600 plus fees, refundable from Paystack.
 
-Keep it cheap: the cheapest real product is ₦45,000 and delivery adds ₦1,500
-below the ₦100,000 free threshold (`checkout-start/index.ts:7-10`). Add a ₦100
-throwaway product in `/admin/products`, test with that, then unpublish it.
+Reading the per-transaction webhook log: 200 = working · 401 = key/webhook mode
+mismatch · no attempt = URL not set on the **live** side · 500 = real DB error,
+detail in the Supabase function logs (dashboard only; this CLI version has no
+`functions logs` subcommand).
 
-Read the result in the Paystack dashboard's per-transaction webhook log:
-200 = working · 401 = key/webhook mode mismatch · no attempt = URL not set on
-the **live** side · 500 = real DB error, detail in the Supabase function logs
-(dashboard only; this CLI version has no `functions logs` subcommand).
+### ✅ Payments could not confirm at all — fixed 22 Oct 2026
 
-Confirm the transaction appears under **Live**, not Test — that doubles as the
-key-mode check.
+The bigger of the two bugs, and invisible until the live key went in.
 
-Paystack has separate test and live webhook URLs — fill in both if you want to
-keep testing after go-live.
+`confirm.ts` required Paystack's amount to equal the order total **exactly**.
+But `data.amount` is what the customer was *charged*, and this account passes
+transaction fees to the customer — so `ABD-JPZ8WT-2430` was charged ₦1,624.37
+against a ₦1,600 order and rejected as `amount-mismatch`.
+
+Both routes share `confirmOrder()`, so the app's own confirm and the webhook
+failed identically: the customer paid, Paystack recorded Success, and the order
+sat on `pending` with nothing able to move it. **Registering the webhook would
+not have helped.** Every live payment was unconfirmable for about 90 minutes.
+
+The four orders that confirmed in August did so on the test key, where the fee
+behaviour differs — which is why nothing surfaced until the live key.
+
+Now requires `amountKobo >= order.total * 100` (`_shared/confirm.ts:39`).
+Underpayment is the fraud this guards against; paying more than was asked is
+not. It also survives the fee-bearing preference being toggled, which an exact
+match does not. Deployed as `checkout-confirm` v5 and `paystack-webhook` v3.
 
 ### 🟡 Decide what happens to abandoned orders
 
 `checkout-start` writes the order row *before* contacting Paystack, so every
-abandoned checkout leaves a `pending` row behind. **Three** exist as of 22 Oct
-(`ABD-1CHSZ1-6568`, `ABD-ZTW7I5-8284`, `ABD-ZTIB69-2109`) against 4 paid, and
-the admin dashboard counts any older than a day under "needs attention". Either
-sweep them on a schedule or treat them as a funnel record — but choose
-deliberately, because the count only grows.
+abandoned checkout leaves a `pending` row behind. **Five** exist as of 25 Oct
+against 6 paid, and the admin dashboard counts any older than a day under
+"needs attention":
+
+| Reference | Why it is pending |
+| --- | --- |
+| `ABD-DIRECT-TEST1` | test fixture for the direct-transfer flow — safe to cancel |
+| `ABD-KVDKUH-8824` | card checkout abandoned mid-flow on 23 Oct |
+| `ABD-1CHSZ1-6568`, `ABD-ZTW7I5-8284`, `ABD-ZTIB69-2109` | abandoned in August |
+
+Either sweep them on a schedule or treat them as a funnel record — but choose
+deliberately, because the count only grows. Note that `payment_method` now
+distinguishes a genuinely-awaiting-money direct transfer from an abandoned
+Paystack checkout; without that they are indistinguishable.
+
+### 🟡 Two test payments are unrefunded
+
+`ABD-JPZ8WT-2430` (₦1,624.37) and `ABD-KVE4L7-4891` (₦1,600 plus fee), both
+real money taken during testing. Refund from the Paystack dashboard; the
+transaction fee is not returned.
 
 ---
 
@@ -248,6 +280,46 @@ fails with `42501 permission denied for table profiles` and ordinary profile
 edits still work. **Adding a user-editable column to `profiles` now means adding
 it to that grant.**
 
+### 🟠 Direct bank transfer — admin half built, checkout half not
+
+Payment into the shop's own account, outside Paystack. **Half shipped**: an
+admin can confirm one, but nothing can create one yet, so the route is not
+reachable by customers.
+
+Done, 25 Oct (migrations `20261025000000` and `20261025010000`, both applied):
+
+- `confirm_direct_transfer(order_id, bank_reference)` — admin only,
+  `payment_method = 'direct'` only, `pending` only. It **refuses a Paystack
+  order outright**: confirming one by hand would assert money arrived with
+  nothing behind the claim. The rules sit in the function rather than the page
+  so they hold however it is called, matching `set_admin`.
+- `payment_method` gained a `CHECK` constraint (`card` | `transfer` | `direct`).
+  It was free text, and a typo would strand an order permanently — the function
+  accepts nothing but `direct` and no other route would move it to `paid`.
+- `paid_confirmed_by` and `paid_reference` record who vouched and what they
+  matched. Null for Paystack orders, so a non-null `paid_confirmed_by` is
+  exactly the set of hand-confirmed payments; the admin order page says as much
+  where it shows one.
+- Confirm panel on `/admin/orders/[id]`, shown only for pending direct orders.
+
+Still to build: the checkout side — a third payment method, a `checkout-start`
+branch that skips Paystack for it, and a screen showing the account details
+with the order reference to quote as the transfer narration.
+
+**Two things to understand before finishing it.** Every direct transfer is
+manual work: a human checks the bank, matches a narration, and confirms. And a
+customer who mistypes the reference creates a payment you cannot match to an
+order. Paystack's own bank transfer already avoids both and is proven working —
+direct transfer buys lower fees and some customers' trust, at that cost.
+
+Not enforced at the database level: admins hold `UPDATE` on every column of
+`orders` (`admin_role.sql:97-102`), so `confirm_direct_transfer`'s guards are
+advisory — an admin can set `paid` directly and bypass them. Deliberate, same
+shape as the `profiles` grant issue but admin-only. Closing it would mean a
+column-level grant.
+
+`ABD-DIRECT-TEST1` is a pending fixture for exercising the confirm flow.
+
 ### 🟡 Someone has to watch `/admin/orders`
 
 Nothing notifies you of a new order. Until that exists, fulfilment depends on a
@@ -273,34 +345,41 @@ Treat `main` as production from here on.
 > anything CLI-driven needs `vercel login` first. The dashboard is the lower-
 > friction path for domains and env vars.
 
-### 🔴 93 Dependabot alerts on `main` — one is unauthenticated RCE
+### 🟠 98 Dependabot alerts on `main` — no reachable critical
 
-**5 critical, 49 high, 31 moderate, 8 low** as of 22 Oct, counted from
-`gh api repos/olacodes/abdmall/dependabot/alerts`. That is up from 44 on 24 Aug,
-and criticals went 1 → 5. GitHub repeats the total on every push.
+**2 critical, 53 high, 35 moderate, 8 low** as of 25 Oct, counted from
+`gh api repos/olacodes/abdmall/dependabot/alerts`. GitHub repeats the total on
+every push, and that banner reflects the **pre-push** scan — it recalculates a
+few minutes later, so do not read it as the result of the push you just made.
 <https://github.com/olacodes/abdmall/security/dependabot>
 
-The five criticals are three distinct advisories, and only one of them is
-actually dangerous here:
+Both remaining criticals are unreachable in production:
 
-| Advisory | Applies? |
+| Advisory | Reachable? |
 | --- | --- |
-| **Next.js — unauthenticated RCE in the Image Optimization API via AVIF** | **Yes.** Public storefront, no auth required to reach it |
-| Next.js — unauthenticated RCE on Windows-hosted servers | No — production is Linux on Vercel |
-| node-tar — decompression/parse DoS | Build-time only; low practical risk |
+| `shell-quote` command injection | No — arrives via `react-native` → `react-devtools-core`, dev tooling, never shipped |
+| `node-tar` decompression DoS | No — build-time only |
 
-Both Next.js advisories clear with the same bump — installed **16.2.12**,
-patched in **16.3.3** (`apps/web/package.json` and `package-lock.json`):
+The **53 high** are the real backlog now. Nothing there has been triaged for
+reachability the way the criticals have, so the count is not the same as the
+risk; it just has not been looked at.
 
-```
-npm i next@^16.3.3 -w apps/web
-```
+**Next.js went 16.2.12 → 16.3.3 → 16.4.1 over 22–25 Oct.** Five criticals were
+closed across those two bumps, of which two were genuinely reachable — both
+unauthenticated RCE in the Image Optimization API, first via AVIF and then via
+SVG. Reachable because the storefront serves remote Supabase images through the
+optimizer with no authentication in front of it.
 
-Heed `AGENTS.md`: this Next.js diverges from training data, so read
-`node_modules/next/dist/docs/` before changing anything the upgrade touches.
-`tar` is transitive — `npm audit fix` reaches it.
+A lesson worth keeping: **16.3.3 did not hold.** It closed the two advisories it
+was taken for, and within days three newer criticals covered it. Image
+Optimization is being actively probed; treat a Next.js patch release as
+something to apply promptly rather than at leisure.
 
-This was 🟠 while the store took no money. It is 🔴 now that it does.
+Heed `AGENTS.md` on any future bump: this Next.js diverges from training data,
+so read `node_modules/next/dist/docs/` before changing anything the upgrade
+touches. The upgrade that works is: forced build for a real baseline (Turbo
+caches, and Next caches *below* Turbo), then `tsc`, `eslint`, and a production
+`next start` walked across the routes — a passing build is not a working site.
 
 ### 🟡 `SUPABASE_SERVICE_ROLE_KEY` is now unused on Vercel
 
@@ -330,13 +409,15 @@ Not configuration, but each removes a class of go-live problem.
   and show a stale reference and ₦0 to someone who had just paid. `reference`
   stays a ref on purpose: it is read only inside async callbacks, where a ref
   avoids the stale closure state would reintroduce. `expo lint` and `tsc` both
-  clean. **Not yet exercised on a device** — there is no build (see §3), so
-  check this screen during the webhook test, which lands on it.
-- **🟡 Honesty pass on v1 copy.** Rating, review and "sold" counts are shown to
-  shoppers as fact. The admin can now edit or zero them — the dead footer links
-  are the other half.
-- **🟡 One product has no photo** (*Peak Milk Powder Refill 900g*); it falls back
-  to a gradient. Flagged on the admin dashboard.
+  clean. **Still not exercised on a device** — there is no build (see §3). The
+  live payment tests on 22–23 Oct went through the *web* checkout, so they did
+  not touch this screen. Check it on the first EAS build.
+- **✅ No fabricated social proof.** Rating, review and "sold" counts read 0
+  across all 8 products as of 25 Oct, so nothing invented is being shown to
+  shoppers. They are admin-editable, so this is a decision to keep making, not
+  a thing that stays fixed.
+- **🟡 Dead footer links.** `site-footer.tsx` still points several columns and
+  both app-store buttons at `href="#"`.
 - **🟡 No size picker on the mobile product page** — it adds to cart without one,
   while web has sizes.
 
@@ -352,12 +433,16 @@ Not configuration, but each removes a class of go-live problem.
 | `paystack-webhook` deployed and tested end to end | 20 Aug |
 | `PAYSTACK_SECRET_KEY` set in Supabase — test key | 19 Aug |
 | `PAYSTACK_SECRET_KEY` rotated to the **live key** (digest `871e5e87…`) | 22 Oct |
-| Paystack webhook URL registered — *not yet proven end to end, see §1* | 22 Oct |
+| Paystack webhook URL registered — in Test mode, so no deliveries fired | 22 Oct |
 | `abdmall.com` ICANN contact verification cleared; Namecheap DNS reactivated | 22 Oct |
 | `abdmall.com` + `www` pointed at Vercel, Let's Encrypt certs issued | 22 Oct |
 | Supabase Auth Site URL and Redirect URLs set to `https://abdmall.com` | 22 Oct |
 | Mobile success screen stopped reading a ref during render (`3bf7b41`) | 22 Oct |
 | `origin` repointed from `abdmall-web.git` to `abdmall.git` | 22 Oct |
+| Exact-amount check fixed — live payments could not confirm (`6bd0a0f`) | 22 Oct |
+| Webhook URL re-entered in **Live** mode; proven by `ABD-KVE4L7-4891` | 23 Oct |
+| Next.js 16.2.12 → 16.3.3 (`72b288b`), then → 16.4.1 (`d51bd26`) | 22–25 Oct |
+| Direct-transfer admin path + two migrations, applied (`3dbbdb1`) | 25 Oct |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |
 | Admin migration `20260819000000_admin_role.sql` applied to production | 19 Aug |
 | `olatundesodiq@gmail.com` flagged `is_admin` | 19 Aug |
