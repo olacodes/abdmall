@@ -3,7 +3,7 @@
 Everything that has to be **set, registered or configured** before abdmall takes
 real orders. Code is not the blocker — most of what's left lives in a dashboard.
 
-Status as of **25 Oct 2026**. Verified items say how they were verified; items
+Status as of **27 Oct 2026**. Verified items say how they were verified; items
 marked *verify* are ones only you can see.
 
 **All three payment routes work end to end.** Card and Paystack bank transfer
@@ -12,7 +12,10 @@ account is confirmed by an admin. The two bugs found along the way are fixed
 and deployed, and the owner can now change the bank account, contact details
 and delivery pricing from `/admin/settings` without a deploy.
 
-What remains is mostly mobile, email and dependency housekeeping.
+Email now sends from `support@abdmall.com` through Zoho, authenticated and
+inbox-delivered, which closes the last thing standing between a customer and an
+account they can confirm. **What remains is mobile and dependency
+housekeeping** — nothing in the web storefront is blocked.
 
 Legend: 🔴 blocks real money · 🟠 blocks a real launch · 🟡 do soon after
 
@@ -176,33 +179,59 @@ via `detectSessionInUrl` and the user ends up signed in on the homepage.
 > `[auth]` block at all, so a push would apply defaults over the dashboard
 > settings.
 
-### 🟠 Production email sender — *verify*
+### ✅ Production email sending — 27 Oct 2026
 
-*Supabase dashboard → Authentication → Emails*
+Zoho Mail hosts `abdmall@abdmall.com` and `support@abdmall.com`; Supabase Auth
+sends through it. Open since August, and the last thing standing between a
+customer and an account they can confirm.
 
-Supabase's built-in mailer is rate-limited and intended for development. Sign-up
-confirmation is **on**, so a customer who can't receive the email can't create
-an account. Configure custom SMTP before launch.
+Supabase → Authentication → Emails → SMTP: `smtp.zoho.com` port 587,
+authenticating as `support@abdmall.com`, which is also the sender. Note that
+**Zoho requires an app-specific password** when 2FA is on; the account password
+fails with an authentication error.
 
-Nothing in the codebase sends email of its own — checked. So the success screen's
-"a receipt is on its way to your email" is currently untrue, and an admin invitee
-still depends on the built-in mailer to confirm their sign-up. One SMTP provider
-(Resend's free tier covers this volume) fixes confirmations, receipts and invites
-together.
-
-**This is now unblocked** — the blocker was DNS on a domain that didn't resolve,
-and `abdmall.com` has been live since 22 Oct. One trap when you add the records:
-the domain already carries Namecheap's email-forwarding SPF
-(`v=spf1 include:spf.efwd.registrar-servers.com ~all`) alongside five
-`eforward*.registrar-servers.com` MX records. A domain may hold only **one** SPF
-record — adding a second breaks both. Merge instead:
+DNS, all three verified live via DNS-over-HTTPS:
 
 ```
-v=spf1 include:spf.efwd.registrar-servers.com include:_spf.resend.com ~all
+SPF    v=spf1 include:zoho.com ~all
+DKIM   zmail._domainkey
+DMARC  v=DMARC1; p=none; rua=mailto:support@abdmall.com
 ```
 
-Leave the MX records unless you want to stop receiving forwarded mail; they
-affect receiving only, not sending.
+**Exactly one SPF record.** A domain may hold only one — a second breaks both.
+Switching MX to Zoho removed Namecheap's forwarding SPF, which left the domain
+with none at all for a while: mail still sends in that state, it just quietly
+lands in spam, so nothing tells you. Any future sender must be *merged* into
+this record, never added alongside it.
+
+Proven end to end by a real password-reset through `/auth/v1/recover`: arrived
+**from `support@abdmall.com`, in the inbox rather than spam** — which is the
+part no DNS lookup can confirm — with the link carrying
+`redirect_to=https://abdmall.com`, so the Site URL set on 22 Oct is intact.
+
+Still true: **nothing in the codebase sends email of its own.** Confirmations,
+invites and password resets are all Supabase's; the success screen's "a receipt
+is on its way to your email" remains the one place the site says something
+untrue. Zoho's free tier is sized for human mailboxes rather than bulk
+transactional mail, so if receipts are added, watch the daily limit — the usual
+split is Zoho for real inboxes and a dedicated sender for automated mail, both
+merged into the one SPF record above.
+
+### 🟡 Password reset is half a feature
+
+The email now works. The feature does not:
+
+- The **"Forgot?" link on the sign-in page points back at `/sign-in`**
+  (`sign-in/page.tsx:66`) — it does nothing.
+- Nothing calls `resetPasswordForEmail`, so a customer cannot trigger a reset.
+- There is no screen to type a new password. The recovery link lands on the
+  site root, where `supabase-js` picks the token out of the URL and simply
+  **signs the user in** — convenient, but not a password change.
+
+Sign-up confirmation, which is the flow that actually gates new customers, is
+wired and working. This one is reachable only by calling the API directly, so
+it is a dead end rather than a broken path — but the dead link invites a
+customer to try.
 
 ---
 
@@ -365,7 +394,9 @@ re-typed to save — but only once it has actually been edited.
 fallbacks. A failed settings read charges the long-standing fee rather than
 giving delivery away.
 
-Support email and phone are columns but unset — nothing renders them yet.
+Support email and phone are columns but **still unset**. `support@abdmall.com`
+now exists and is monitored, so it is worth filling in — nothing renders them
+yet, but the field is there for whatever shows contact details first.
 
 ### 🟡 Someone has to watch `/admin/orders`
 
@@ -493,6 +524,8 @@ Not configuration, but each removes a class of go-live problem.
 | Direct-transfer checkout + `/checkout/transfer` screen (`1031644`) | 25 Oct |
 | WhatsApp number changed to 0903 733 5409 (`1a1f372`) | 25 Oct |
 | `/admin/settings` + `shop_settings`, delivery pricing now editable (`8ef0f2e`) | 25 Oct |
+| Zoho Mail on `abdmall.com`; SPF, DKIM and DMARC live | 27 Oct |
+| Supabase Auth sending via Zoho SMTP — proven inbox-delivered | 27 Oct |
 | Vercel production env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | 11 Aug |
 | Admin migration `20260819000000_admin_role.sql` applied to production | 19 Aug |
 | `olatundesodiq@gmail.com` flagged `is_admin` | 19 Aug |
