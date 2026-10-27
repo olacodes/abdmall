@@ -40,7 +40,7 @@ export function SiteFooter({
       links: [
         { label: "About abdmall", href: "#" },
         { label: "Careers", href: "#" },
-        { label: "Privacy Policy", href: "#" },
+        { label: "Privacy Policy", href: "/privacy" },
         { label: "Terms of Service", href: "#" },
       ],
     },
