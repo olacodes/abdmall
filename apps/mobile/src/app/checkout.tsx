@@ -228,9 +228,12 @@ export default function Checkout() {
           <Text className="mt-2 font-display text-2xl text-ink">
             Order confirmed
           </Text>
+          {/* No receipt email is sent — nothing in the app sends mail of its
+              own. Point at the reference shown below instead of promising
+              something that never arrives. */}
           <Text className="text-center font-sans text-sm text-muted">
-            Your payment was verified. A receipt is on its way to{" "}
-            <Text className="font-sans-bold text-ink">{form.email}</Text>.
+            Your payment was verified. Keep the reference below — it&rsquo;s how
+            we&rsquo;ll find your order if you need to get in touch.
           </Text>
           <View className="mt-2 w-full items-center rounded-xl border border-line bg-surface p-5">
             <Text className="font-sans text-xs uppercase tracking-wide text-faint">

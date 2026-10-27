@@ -59,13 +59,13 @@ export default function SuccessPage() {
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
           Thank you{order.name ? `, ${order.name.split(" ")[0]}` : ""}.
         </h1>
+        {/* No receipt email is sent — nothing in the app sends mail of its own.
+            Point at the reference shown below, which the customer does have,
+            rather than promising something that never arrives. */}
         <p className="mt-4 max-w-md text-muted">
-          Your payment was verified and your order is confirmed. A receipt is on
-          its way to{" "}
-          <span className="font-medium text-ink">
-            {order.email || "your email"}
-          </span>
-          .
+          Your payment was verified and your order is confirmed. Keep the
+          reference below — it&rsquo;s how we&rsquo;ll find your order if you
+          need to get in touch.
         </p>
       </div>
 
