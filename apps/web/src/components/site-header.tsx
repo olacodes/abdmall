@@ -54,7 +54,7 @@ function SearchForm() {
         onChange={(e) => setQ(e.target.value)}
         type="search"
         aria-label="Search products"
-        placeholder="Search for phones, ankara, rice, generators…"
+        placeholder="Search for rings, gemstones, phones, watches…"
         className="h-11 w-full rounded-l-full border border-r-0 border-line bg-white px-5 text-sm text-ink placeholder:text-faint focus:outline-none"
       />
       <button
