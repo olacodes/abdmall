@@ -13,9 +13,13 @@ import { supabasePublic } from "@/lib/supabase/public";
 const CATALOGUE_TAG = "catalogue";
 const REVALIDATE = 3600; // seconds — catalogue rarely changes
 
+// Key says "stocked" because that is now what this returns — categories with
+// at least one active product. It also forces a cold read on deploy: Vercel
+// restores .next/cache between builds, so the old key would have kept serving
+// all six categories, including the four that are empty, until it expired.
 export const getCategories = unstable_cache(
   async (): Promise<Category[]> => fetchCategories(supabasePublic),
-  ["catalogue:categories"],
+  ["catalogue:categories:stocked"],
   { tags: [CATALOGUE_TAG], revalidate: REVALIDATE },
 );
 

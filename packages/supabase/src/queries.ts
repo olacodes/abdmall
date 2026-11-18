@@ -66,15 +66,37 @@ export function mapProduct(row: ProductRow): Product {
   };
 }
 
+/**
+ * Categories a shopper should see — those with something in them.
+ *
+ * An empty category is a dead end: a tile on the home screen and an entry in
+ * the nav that lead to "nothing here". Rather than a visibility flag someone
+ * has to remember to flip in both directions, this is derived from stock, so a
+ * category appears the moment its first product goes live and disappears again
+ * if it empties.
+ *
+ * The admin lists categories through its own query and still sees all of them,
+ * which is what you want when adding the first product to a new one.
+ */
 export async function fetchCategories(
   client: SupabaseClient,
 ): Promise<Category[]> {
   const { data, error } = await client
     .from("categories")
-    .select("slug, name, tagline, hue, image_url")
+    // An inner join on an active product: PostgREST drops any category row
+    // with no match, which is exactly the filter we want.
+    .select("slug, name, tagline, hue, image_url, products!inner(id)")
+    .eq("products.is_active", true)
     .order("sort_order");
   if (error) throw new Error(`Failed to load categories: ${error.message}`);
-  return (data as CategoryRow[]).map(mapCategory);
+
+  // PostgREST nests the matched products rather than repeating the category,
+  // so this is already one row each — the dedupe only guards against that
+  // changing underneath us.
+  const seen = new Set<string>();
+  return (data as CategoryRow[])
+    .filter((row) => !seen.has(row.slug) && seen.add(row.slug))
+    .map(mapCategory);
 }
 
 export async function fetchProducts(
