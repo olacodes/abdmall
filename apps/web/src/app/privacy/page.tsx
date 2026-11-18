@@ -152,6 +152,13 @@ export default async function PrivacyPage() {
               but past orders remain on file because we are required to keep a
               record of sales.
             </p>
+            <p>
+              Those order records are kept for <strong>6 years</strong> from the
+              date of sale, the period Nigerian law requires accounting records
+              to be retained, and are deleted afterwards. Everything else —
+              your sign-in, your profile and your saved addresses — is deleted
+              as soon as you close your account.
+            </p>
           </Section>
 
           <Section title="Your rights">

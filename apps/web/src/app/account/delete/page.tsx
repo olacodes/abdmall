@@ -41,10 +41,34 @@ export default function DeleteAccountPage() {
             record of sales. They are no longer linked to an account, and
             you won&rsquo;t be able to see them here any more.
           </li>
+          <li>
+            Order records are kept for <strong className="text-ink">6 years</strong>{" "}
+            from the date of sale — the period Nigerian law requires accounting
+            records to be retained — and are deleted afterwards.
+          </li>
         </ul>
         <p className="mt-4 text-faint">
           This cannot be undone. Shopping as a guest still works, and you can
           create a new account at any time.
+        </p>
+      </div>
+
+      {/* Static, because Google asks that the steps be prominent on this page
+          and the panel below only renders once scripts have run. */}
+      <div className="mt-6">
+        <p className="font-semibold text-ink">How to delete your account</p>
+        <ol className="mt-2 flex list-decimal flex-col gap-1 pl-5 text-sm text-muted">
+          <li>Sign in below with the account you want to close.</li>
+          <li>
+            Type <span className="font-mono text-ink">DELETE</span> to confirm.
+          </li>
+          <li>
+            Press <span className="font-semibold text-ink">Delete my account</span>.
+            It takes effect immediately.
+          </li>
+        </ol>
+        <p className="mt-2 text-sm text-muted">
+          You can do the same from the abdmall app, under Account.
         </p>
       </div>
 
