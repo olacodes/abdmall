@@ -12,24 +12,27 @@ abdmall
 
 ## Short description · 80 characters
 
-Shown under the app name in search results. 74 characters:
+Shown under the app name in search results. 75 characters:
 
 ```
-Shop fashion, electronics, home and beauty in Nigeria. Pay card or transfer.
+Silver rings, gemstones and gadgets, delivered in Nigeria. Card or transfer.
 ```
 
 ## Full description · 4000 characters
 
 ```
-abdmall is an online store for everyday Nigerian shopping. Fashion,
-electronics, home and kitchen, beauty, jewellery and groceries — all in one
-place, with clear prices in naira.
+abdmall is an online shop for silver jewellery and everyday gadgets,
+delivered across Nigeria, with clear prices in naira.
 
-BROWSE AND BUY
-• Products across six categories, added to and updated regularly
-• Search by name, or filter by category and price
-• Discounts shown up front, so you can see what you are saving
-• Product photos and details before you commit
+SILVER RINGS AND GEMSTONES
+• Amethyst, opal, tourmaline, beryl, citrine and ruby
+• Rings and earrings, each photographed as it is — what you see is the
+  piece you receive
+• Prices marked down from the original, so you can see what you are saving
+
+PHONES, WATCHES AND GADGETS
+• Compact phones, smart watches and cameras
+• Honest specs in the description, no filler
 
 PAY THE WAY YOU PREFER
 • Card payment, handled securely by Paystack
@@ -60,9 +63,12 @@ abdmall — the mall in your pocket.
 
 | Asset | Spec | File |
 | --- | --- | --- |
-| App icon | 512 × 512 PNG, 32-bit | `play-icon-512.png` |
-| Feature graphic | 1024 × 500 PNG | `play-feature-1024x500.png` |
-| Phone screenshots | 2–8, 9:16, min 320px | `play-screenshot-*.png` |
+| App icon | 512 × 512 PNG, 32-bit | `play-assets/play-icon-512.png` |
+| Feature graphic | 1024 × 500 PNG | `play-assets/play-feature-1024x500.png` |
+| Phone screenshots | 4 supplied, 1080 × 1920 (9:16) | `play-assets/play-screenshot-*.png` |
+
+Screenshots are captured from the real app, not the website — the Expo build
+running on web, which is the same React Native code the Android build ships.
 
 ---
 
@@ -77,14 +83,23 @@ abdmall — the mall in your pocket.
 
 ---
 
-## Notes on what this copy deliberately does not say
+## What this copy deliberately does not say
 
-The earlier store-listing drafts promised mobile money, cash on delivery,
-live order tracking and buyer protection. None of those exist, and a listing
-that describes features the app does not have is both a Play policy problem
-and a refund conversation waiting to happen. This copy claims only what
-shipped: card and bank transfer, flat delivery with a free threshold, guest
-checkout, saved order history, WhatsApp support.
+**It does not name six departments.** An earlier draft opened with "fashion,
+electronics, home and kitchen, beauty, jewellery and groceries" because the
+catalogue has six categories. Four of them are empty — the shop stocks 44
+jewellery pieces and 5 gadgets. Those four are now hidden from the storefront,
+and the copy describes what is actually for sale.
 
-It also avoids naming an exact product count. The catalogue changes, and a
-listing that says "49 products" ages badly.
+**It does not promise mobile money, cash on delivery, live tracking or buyer
+protection.** Earlier drafts did. None exist, and a listing describing absent
+features is both a Play policy problem and a refund argument waiting to happen.
+
+**It does not give a product count.** The catalogue changes; "49 products"
+ages badly.
+
+## When Fashion, Beauty, Home or Groceries are stocked
+
+The storefront brings a category back automatically once it has an active
+product — there is no flag to flip. The listing copy is the part that does not
+update itself, so revisit the first two sections here at that point.
