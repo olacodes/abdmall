@@ -1,109 +1,84 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "@/components/icons";
 
-export function HeroCarousel({ maxOff }: { maxOff: number }) {
-  const [active, setActive] = useState(0);
+export type HeroSlide = {
+  badge: string;
+  title: string;
+  sub: string;
+  href: string;
+  image: string;
+};
 
-  // maxOff is the real deepest discount, computed server-side from live deals.
-  const slides = useMemo(
-    () => [
-    {
-      badge: "Owambe Season Sale",
-      title: `Save up to ${maxOff}% on fashion`,
-      sub: "Ankara, agbada, native wear & more — ready for the next big day.",
-      href: "/categories/fashion",
-      image: "/products/agbada-senator-3-piece.jpg",
-    },
-    {
-      badge: "No More Darkness",
-      title: "Power up your home",
-      sub: "Generators, rechargeable fans, solar lamps & power banks.",
-      href: "/categories/electronics",
-      image: "/products/i-pass-my-neighbour-generator.jpg",
-    },
-    {
-      badge: "New: Jewelry",
-      title: "Gold, gems & everyday shine",
-      sub: "Rings, chains, bracelets and gemstones — now on abdmall.",
-      href: "/categories/jewelry",
-      image: "/products/jewelry-gold-chain.jpg",
-    },
-    {
-      badge: "Market Run",
-      title: "Foodstuff, delivered",
-      sub: "Rice, oil, garri and daily essentials — straight to your door.",
-      href: "/categories/groceries",
-      image: "/products/golden-penny-rice-50kg.jpg",
-    },
-  ],
-    [maxOff],
-  );
+/**
+ * The slides are built on the server from categories that actually have stock
+ * — see buildHeroSlides in app/page.tsx.
+ *
+ * They used to be a hardcoded list of four: fashion, electronics, jewelry and
+ * groceries, written for the demo catalogue. Three of those departments are
+ * now empty, so the first thing a customer saw was an invitation to shop
+ * agbada or rice, and the link went to a category page that no longer exists.
+ */
+export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
+  const [active, setActive] = useState(0);
+  const count = slides.length;
 
   useEffect(() => {
+    if (count < 2) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = setInterval(
-      () => setActive((a) => (a + 1) % slides.length),
-      5500,
-    );
+    const id = setInterval(() => setActive((a) => (a + 1) % count), 5500);
     return () => clearInterval(id);
-  }, [slides.length]);
+  }, [count]);
+
+  const slide = useMemo(() => slides[active] ?? slides[0], [slides, active]);
+  if (!slide) return null;
 
   return (
-    <div className="relative h-[260px] overflow-hidden rounded-xl sm:h-[340px] lg:h-[400px]">
-      {slides.map((s, i) => (
-        <div
-          key={i}
-          className={`absolute inset-0 transition-opacity duration-700 ${
-            i === active ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-          aria-hidden={i !== active}
-        >
-          <Image
-            src={s.image}
-            alt=""
-            fill
-            priority={i === 0}
-            sizes="(max-width: 1024px) 100vw, 70vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
-          <div className="relative flex h-full flex-col justify-center gap-3 px-6 sm:px-10">
-            <span className="w-fit rounded-full gold-fill px-3 py-1 text-xs font-bold uppercase tracking-wide">
-              {s.badge}
-            </span>
-            <h2 className="max-w-md font-display text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
-              {s.title}
-            </h2>
-            <p className="max-w-sm text-sm text-white/80 sm:text-base">
-              {s.sub}
-            </p>
-            <Link
-              href={s.href}
-              className="mt-2 inline-flex h-11 w-fit items-center justify-center gap-2 rounded-full gold-fill px-6 text-sm font-bold"
-            >
-              Shop now <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+    <section className="relative overflow-hidden rounded-xl bg-brand">
+      <div className="relative flex min-h-56 flex-col justify-center gap-3 px-6 py-8 sm:min-h-64 sm:px-10">
+        <Image
+          src={slide.image}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-30"
+        />
+        <div className="relative max-w-lg">
+          <span className="inline-block rounded-full gold-fill px-3 py-1 text-xs font-bold text-brand">
+            {slide.badge}
+          </span>
+          <h1 className="mt-3 font-display text-2xl font-semibold text-white sm:text-4xl">
+            {slide.title}
+          </h1>
+          <p className="mt-2 text-sm text-white/70 sm:text-base">{slide.sub}</p>
+          <Link
+            href={slide.href}
+            className="mt-5 inline-flex h-11 items-center gap-2 rounded-full gold-fill px-6 text-sm font-bold text-brand transition-transform hover:-translate-y-0.5"
+          >
+            Shop now <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-      ))}
 
-      {/* dots */}
-      <div className="absolute bottom-4 left-6 z-10 flex gap-2 sm:left-10">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setActive(i)}
-            aria-label={`Go to slide ${i + 1}`}
-            className={`h-2 rounded-full transition-all ${
-              i === active ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
-            }`}
-          />
-        ))}
+        {count > 1 && (
+          <div className="relative mt-5 flex gap-2">
+            {slides.map((s, i) => (
+              <button
+                key={s.href}
+                onClick={() => setActive(i)}
+                aria-label={`Show ${s.title}`}
+                aria-current={i === active}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === active ? "w-7 bg-gold" : "w-3 bg-white/30"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }

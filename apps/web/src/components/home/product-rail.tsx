@@ -14,6 +14,12 @@ export function ProductRail({
   products: Product[];
   accent?: boolean;
 }) {
+  // A shelf with nothing on it is worse than no shelf: a heading and a
+  // "See all" link promising a department that turns out to be empty. The
+  // homepage asks for one rail per category, so this is where an unstocked
+  // category quietly drops out.
+  if (products.length === 0) return null;
+
   return (
     <section
       className={`rounded-xl border border-line ${accent ? "bg-gold-soft" : "bg-surface"}`}

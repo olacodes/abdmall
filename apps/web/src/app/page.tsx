@@ -15,7 +15,45 @@ import {
 } from "@/components/icons";
 import { getCategories, getProducts, getDealProducts } from "@/lib/catalogue";
 import { getShopSettings } from "@/lib/settings";
-import { discountPercent, formatNaira } from "@/lib/format";
+import { formatNaira } from "@/lib/format";
+
+/**
+ * Editorial copy for the hero, per category. A category with no entry still
+ * gets a slide, built from its own name and tagline — the point is that only
+ * stocked categories appear at all, so this never advertises an empty aisle.
+ */
+const heroCopy: Record<string, { badge: string; title: string; sub: string }> = {
+  jewelry: {
+    badge: "Gold, gems & everyday shine",
+    title: "Silver rings & gemstones",
+    sub: "Amethyst, opal, tourmaline and more — each one photographed as it is.",
+  },
+  electronics: {
+    badge: "Phones, Power & Gadgets",
+    title: "Gadgets that earn their keep",
+    sub: "Phones, smart watches and cameras, priced to move.",
+  },
+};
+
+function buildHeroSlides(
+  categories: { slug: string; name: string; tagline?: string }[],
+  products: { category: string; image?: string; oldPrice?: number; price: number }[],
+): { badge: string; title: string; sub: string; href: string; image: string }[] {
+  return categories
+    .map((cat) => {
+      // Lead with a real photo from the category rather than a stock image of
+      // something the shop does not sell.
+      const image = products.find((p) => p.category === cat.slug && p.image)?.image;
+      if (!image) return null;
+      const copy = heroCopy[cat.slug] ?? {
+        badge: cat.name,
+        title: cat.name,
+        sub: cat.tagline ?? `Shop ${cat.name.toLowerCase()} on abdmall.`,
+      };
+      return { ...copy, href: `/categories/${cat.slug}`, image };
+    })
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+}
 
 const services = (threshold: string) => [
   { icon: Truck, title: "Free delivery", note: `On orders over ${threshold}` },
@@ -33,10 +71,7 @@ export default async function Home() {
   ]);
   const byCategory = (slug: string) =>
     products.filter((p) => p.category === slug);
-  const maxOff = Math.max(
-    0,
-    ...dealProducts.map((p) => discountPercent(p.oldPrice!, p.price)),
-  );
+  const heroSlides = buildHeroSlides(categories, products);
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-5 sm:px-8">
@@ -58,7 +93,7 @@ export default async function Home() {
           </ul>
         </aside>
 
-        <HeroCarousel maxOff={maxOff} />
+        <HeroCarousel slides={heroSlides} />
       </section>
 
       {/* ===== SERVICE STRIP ===== */}
@@ -120,16 +155,14 @@ export default async function Home() {
       </section>
 
       {/* ===== CATEGORY SHELVES ===== */}
-      <ProductRail
-        title="Fashion & Native Wear"
-        href="/categories/fashion"
-        products={byCategory("fashion")}
-      />
-      <ProductRail
-        title="Phones, Power & Gadgets"
-        href="/categories/electronics"
-        products={byCategory("electronics")}
-      />
+      {categories.slice(0, 2).map((cat) => (
+        <ProductRail
+          key={cat.slug}
+          title={cat.name}
+          href={`/categories/${cat.slug}`}
+          products={byCategory(cat.slug)}
+        />
+      ))}
 
       {/* app-download band */}
       <section className="overflow-hidden rounded-xl bg-brand">
@@ -161,26 +194,14 @@ export default async function Home() {
         </div>
       </section>
 
-      <ProductRail
-        title="Home & Kitchen"
-        href="/categories/home"
-        products={byCategory("home")}
-      />
-      <ProductRail
-        title="Beauty & Personal Care"
-        href="/categories/beauty"
-        products={byCategory("beauty")}
-      />
-      <ProductRail
-        title="Jewelry & Gemstones"
-        href="/categories/jewelry"
-        products={byCategory("jewelry")}
-      />
-      <ProductRail
-        title="Groceries & Foodstuff"
-        href="/categories/groceries"
-        products={byCategory("groceries")}
-      />
+      {categories.slice(2).map((cat) => (
+        <ProductRail
+          key={cat.slug}
+          title={cat.name}
+          href={`/categories/${cat.slug}`}
+          products={byCategory(cat.slug)}
+        />
+      ))}
 
       {/* ===== NEWSLETTER ===== */}
       <section className="rounded-xl border border-line bg-surface px-6 py-10 text-center">
