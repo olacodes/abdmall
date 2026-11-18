@@ -29,3 +29,9 @@ verify_jwt = false
 # before anything is read from the payload.
 [functions.paystack-webhook]
 verify_jwt = false
+
+# The one function that must NOT accept a guest: it closes the caller's own
+# account, so the gateway enforces a real user JWT and the function re-checks
+# it before deleting anything.
+[functions.delete-account]
+verify_jwt = true

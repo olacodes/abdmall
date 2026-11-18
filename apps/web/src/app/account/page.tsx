@@ -240,6 +240,17 @@ export default function AccountPage() {
           </div>
         )}
       </section>
+
+      {/* Quiet, but present — both app stores require account deletion to be
+          reachable from inside the product, not only by writing in. */}
+      <footer className="mt-12 border-t border-line pt-6">
+        <Link
+          href="/account/delete"
+          className="text-sm text-faint underline-offset-4 transition-colors hover:text-sale hover:underline"
+        >
+          Delete my account
+        </Link>
+      </footer>
     </div>
   );
 }

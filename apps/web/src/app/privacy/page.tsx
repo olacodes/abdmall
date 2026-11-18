@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { getShopSettings } from "@/lib/settings";
 
@@ -161,7 +162,19 @@ export default async function PrivacyPage() {
               <li>delete your account</li>
             </ul>
             <p>
-              Write to{" "}
+              You can close your account yourself at any time, without asking
+              us — from{" "}
+              <Link
+                href="/account/delete"
+                className="font-semibold text-gold-deep hover:underline"
+              >
+                this page
+              </Link>{" "}
+              on the website, or under Account in the abdmall app. It takes
+              effect immediately.
+            </p>
+            <p>
+              For anything else, write to{" "}
               <a
                 href={`mailto:${email}`}
                 className="font-semibold text-gold-deep hover:underline"

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   View,
   Text,
@@ -5,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
@@ -12,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { formatNaira } from "@abdmall/core";
 import { useAuth } from "@/lib/auth";
 import { useMyOrders, type MyOrder } from "@/lib/orders";
+import { deleteAccount } from "@/lib/delete-account";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
@@ -55,6 +58,43 @@ function OrderCard({ order }: { order: MyOrder }) {
 export default function AccountScreen() {
   const { user, loading, signOut } = useAuth();
   const ordersQ = useMyOrders(Boolean(user));
+  const [deleting, setDeleting] = useState(false);
+
+  /**
+   * Two taps to close an account, with the consequences spelled out in
+   * between — deletion is permanent, and the orders note matches both the
+   * privacy policy and what the database actually does.
+   */
+  const confirmDelete = () => {
+    Alert.alert(
+      "Delete your account?",
+      "This removes your sign-in, your profile and any saved addresses. " +
+        "Past orders stay on file as a record of sale, but will no longer be " +
+        "linked to you.\n\nThis cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            const result = await deleteAccount();
+            if (result.ok) {
+              // Clears the local session and drops back to the signed-out view.
+              await signOut();
+              Alert.alert(
+                "Account deleted",
+                "Your account has been closed. You can still shop as a guest.",
+              );
+            } else {
+              Alert.alert("Could not delete account", result.error);
+            }
+            setDeleting(false);
+          },
+        },
+      ],
+    );
+  };
 
   if (loading) {
     return (
@@ -152,6 +192,17 @@ export default function AccountScreen() {
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Both app stores require account deletion to be reachable from
+            inside the app itself, not only by writing in. Kept quiet, at the
+            very bottom, so it is never hit by accident. */}
+        <View className="mt-4 border-t border-line pt-5">
+          <Pressable onPress={confirmDelete} disabled={deleting}>
+            <Text className="font-sans text-sm text-faint underline">
+              {deleting ? "Deleting account…" : "Delete my account"}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
