@@ -5,7 +5,56 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const BUCKET = "product-images";
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_EDGE = 1200; // 3x density on a ~400pt phone view
+const JPEG_QUALITY = 0.72;
+
+/**
+ * Shrinks a photo in the browser before it is uploaded.
+ *
+ * Phone cameras produce 2–5 MB files, and uploading them untouched is how the
+ * catalogue ended up at 93 MB. The web storefront hid that because next/image
+ * resizes on the fly, but the mobile app fetches the stored file, so a grid of
+ * ten products was 20 MB and the photos simply never arrived over mobile data.
+ * Supabase image transformation would solve it server-side but is a paid
+ * feature, so the file has to be the right size before it lands.
+ *
+ * Returns the original untouched if shrinking would not help.
+ */
+async function shrink(file: File): Promise<File> {
+  try {
+    // from-image honours EXIF rotation — without it, photos taken in portrait
+    // on a phone come out on their side.
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    // JPEG has no alpha; without this, anything transparent turns black.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+    );
+    if (!blob || blob.size >= file.size) return file;
+
+    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], name, { type: "image/jpeg" });
+  } catch {
+    // Anything unexpected — an exotic format, a browser without canvas
+    // encoding — and we upload what we were given rather than fail.
+    return file;
+  }
+}
 
 /**
  * Uploads straight from the browser to Supabase Storage, then hands the public
@@ -40,19 +89,20 @@ export function ImageField({
     }
     if (file.size > MAX_BYTES) {
       setError(
-        `That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — keep it under 5MB.`,
+        `That image is ${(file.size / 1024 / 1024).toFixed(1)}MB — keep it under 20MB.`,
       );
       return;
     }
 
     setBusy(true);
+    const toUpload = await shrink(file);
     const supabase = createClient();
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const ext = toUpload.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${crypto.randomUUID()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
-      .upload(path, file, { cacheControl: "3600", upsert: false });
+      .upload(path, toUpload, { cacheControl: "3600", upsert: false });
 
     if (uploadError) {
       setBusy(false);
