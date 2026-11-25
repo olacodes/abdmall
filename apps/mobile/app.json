@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.abdmall.app",
-      "supportsTablet": true
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.abdmall.app",
