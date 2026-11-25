@@ -57,6 +57,12 @@
         "projectId": "9b90c069-40f1-4999-b33f-1699922471fd"
       }
     },
-    "owner": "osmani-technologies-limited"
+    "owner": "osmani-technologies-limited",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9b90c069-40f1-4999-b33f-1699922471fd"
+    }
   }
 }
