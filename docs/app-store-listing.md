@@ -156,28 +156,26 @@ the web at https://abdmall.com/account/delete
 
 ---
 
-## Screenshots — NOT YET PRODUCED
+## Screenshots — DONE
 
-Apple requires at least one set; 6.7" is the only mandatory size, and modern
-App Store Connect scales it down for smaller devices.
+Five, in `docs/appstore-assets/`, all 1290 x 2796:
 
-| Size | Pixels | Devices |
+| Order | File | Shows |
 | --- | --- | --- |
-| 6.7" | 1290 × 2796 | iPhone 15/16 Pro Max |
-| 6.5" | 1242 × 2688 | iPhone 11 Pro Max, XS Max |
+| 1 | `ios-6.7-1-home.png` | Home — categories and the gadgets shelf |
+| 2 | `ios-6.7-2-shop.png` | Catalogue with search |
+| 3 | `ios-6.7-3-product-jewelry.png` | A silver earrings product page |
+| 4 | `ios-6.7-4-product-phone.png` | A phone product page |
+| 5 | `ios-6.7-5-cart.png` | Cart with free delivery applied |
 
-**These cannot be reused from the Play listing.** Those are 1080 × 1920 —
-16:9 — and an iPhone is far taller at roughly 0.46:1. Scaling to fit leaves
-black bands top and bottom; scaling to fill crops ~280px of width, which cuts
-the edges off headings and the tab bar. Both were tried and discarded.
+6.7" is the only size Apple requires — App Store Connect scales it down for
+smaller iPhones, so there is no need for a 6.5" set.
 
-They need capturing at a true iPhone viewport: 430 × 932 at 3x for 6.7", or
-414 × 896 at 3x for 6.5". Either run the app in an iOS simulator, or in a
-browser whose device emulation is set to those dimensions — with network
-access, or the product photos will not load and every tile falls back to the
-monogram placeholder.
-
----
+Captured from the real app at a true iPhone viewport (430 x 932 at 3x), so
+these are native device pixels rather than an upscale. **Do not reuse the
+Play screenshots here**: those are 1080 x 1920, and an iPhone is far taller,
+so fitting leaves black bands and filling crops roughly 280px of width off
+the headings and tab bar.
 
 ## Build
 
